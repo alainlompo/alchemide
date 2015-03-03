@@ -3,13 +3,9 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Ace Kitchen Sink</title>
-    <meta name="author" content="Fabian Jakobs">
-    <!--
-    Ace
-      version %version%
-      commit  %commit%
-    -->
+    <title>ErlHickey</title>
+    <meta name="author" content="Krzysztof Wende <iraasta>">
+
 
     <link rel="stylesheet" href="demo/kitchen-sink/styles.css" type="text/css" media="screen" charset="utf-8">
     <script async="true" src="https://use.edgefonts.net/source-code-pro.js"></script>
@@ -17,11 +13,12 @@
     <link href="./doc/site/images/favicon.ico" rel="icon" type="image/x-icon">
 </head>
 <body>
+<div id="fileBar" style="height: 20px; width: 100%; background: #ffffff; z-index: 1000">YOASDAD</div>
 <div id="optionsPanel" style="position:absolute;height:100%;width:260px">
   <div style="position: absolute; overflow: hidden; top:0px; bottom:0">
   <div style="width: 120%; height:100%; overflow-y: scroll">
 
-  <table id="controls">
+  <table id="controls" style="visibility: hidden">
     <tr>
       <td>
         <label for="doc">Document</label>
@@ -54,7 +51,7 @@
         <label for="theme">Theme</label>
       </td><td>
         <select id="theme" size="1">
-          
+
         </select>
       </td>
     </tr>

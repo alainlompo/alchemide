@@ -578,7 +578,7 @@ env.editSnippets = function() {
 require("ace/ext/language_tools");
 env.editor.setOptions({
     enableBasicAutocompletion: true,
-    enableLiveAutocompletion: false,
+    enableLiveAutocompletion: true,
     enableSnippets: true
 });
 
@@ -586,20 +586,3 @@ var beautify = require("ace/ext/beautify");
 env.editor.commands.addCommands(beautify.commands);
 
 });
-
-//==================================================================
-//=========================== ErlHickey ============================
-//==================================================================
-
-function addError(atRow, text){
-    editor.session.setAnnotations([{
-        row: atRow,
-        column: 2,
-        text: text,
-        type: "error"
-    }]);
-}
-
-function compileFile() {
-
-}

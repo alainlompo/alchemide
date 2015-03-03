@@ -127,7 +127,11 @@ function handleErlCall(uri, req, res) {
         erlCompServer.awaitCompletion(parameters["word"], function(result){
             res.end(JSON.stringify({result : result}))
         });
-
+    })
+    get(/compile/, function(){
+        erlCompServer.compile(parameters["module"], function(result){
+            res.end(JSON.stringify(result, null, 2))
+        })
     })
 }
 function getCurr(uri) {
@@ -157,25 +161,22 @@ var erlCompServer = {};
         term.write(word + "\t");
         term.once("data", function(data)
         {
-            console.log("result = " + data)
             if((new RegExp(">\\s*")).test(data) || data.split(" ").length == 1){
                callback( prepareResult(acc + data));
                 console.log("good");
-
                 //CLEAR THE CONSOLE
-                term.write("\n")
+                term.write(".\n")
             }
             else {
                 //callback( prepareResult(acc + data));
-                console.log("bad");
-
-                //term.write(".\n");
+                //console.log("bad");
+                term.write(".\n");
                 awaitCompletion(word, callback, acc  + "," + data)
             }
         })
     }
     function prepareResult(res) {
-        res = res.split(/\s+/);
+        res = res.replace('\u0007',"").split(/\s+/);
         if(res.length > 1) {
             res.splice(0, 1);
             res.splice(res.length - 2, 2);
@@ -185,10 +186,46 @@ var erlCompServer = {};
 
     }
 
-    function compileModule(){
-        term.write()
+    function compileModule(name, cb){
+        term.write("c('" + name + "').\n");
+        var lines = [];
+        term.on("data", function(data){
+            data.split("\n").map(function(line){
+                var res = recognizeCompilerLine(line)
+                if(res) {
+                    lines.push(res);
+                    console.log("data = " + JSON.stringify(res))
+                    if (res.type == "result") {
+                        cb(lines)
+                    }
+                }
+            })
+        })
+    }
+    function recognizeCompilerLine(line){
+        //if tuple result
+        if(!line.length) return undefined
+        line = line.trim();
+        if(/^\{.*\}\s*$/.test(line)){
+            return {
+                type: "result",
+                content: line
+            }
+        }
+        else
+        {
+            var cake = line.split(":");
+            return {
+                type: "info",
+                path: cake[0],
+                line: cake[1],
+                level: cake[2],
+                content: cake.slice(3).join(":")
+            }
+        }
     }
     erlCompServer.awaitCompletion = awaitCompletion;
+    erlCompServer.compile = compileModule
 })();
 
 //==================================================================
