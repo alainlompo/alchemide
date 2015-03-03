@@ -3,6 +3,7 @@
 *.swp
 *.tmp
 *~
+.idea
 
 # Project files that should not be in the repo
 .*
