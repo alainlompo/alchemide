@@ -133,6 +133,11 @@ function handleErlCall(uri, req, res) {
             res.end(JSON.stringify(result, null, 2))
         })
     })
+    get(/dialyze/, function(){
+        erlCompServer.dialyze(parameters["module"], function(result){
+            res.end(JSON.stringify(result, null, 2))
+        })
+    })
 }
 function getCurr(uri) {
     return function(pathregex, fun){
@@ -189,22 +194,26 @@ var erlCompServer = {};
     function compileModule(name, cb){
         term.write("c('" + name + "').\n");
         var lines = [];
-        term.on("data", function(data){
-            data.split("\n").map(function(line){
-                var res = recognizeCompilerLine(line)
-                if(res) {
-                    lines.push(res);
-                    console.log("data = " + JSON.stringify(res))
-                    if (res.type == "result") {
-                        cb(lines)
+        var listenForDaya = function() {
+            term.once("data", function (data) {
+                data.split("\n").map(function (line) {
+                    var res = recognizeCompilerLine(line);
+                    if (res) {
+                        lines.push(res);
+                        console.log("data = " + JSON.stringify(res));
+                        if (res.type == "result") {
+                            cb(lines)
+                        }
+                        else listenForDaya()
                     }
-                }
+                    else listenForDaya()
+                })
             })
-        })
+        }
     }
     function recognizeCompilerLine(line){
         //if tuple result
-        if(!line.length) return undefined
+        if(!line.length) return undefined;
         line = line.trim();
         if(/^\{.*\}\s*$/.test(line)){
             return {
@@ -223,6 +232,9 @@ var erlCompServer = {};
                 content: cake.slice(3).join(":")
             }
         }
+    }
+    function dialyzeModule(name) {
+        term.write("")
     }
     erlCompServer.awaitCompletion = awaitCompletion;
     erlCompServer.compile = compileModule
