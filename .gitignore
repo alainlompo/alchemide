@@ -18,6 +18,8 @@ node_modules/
 jam/
 * *
 
+output/
+
 .git-ref
 npm-debug.log
 deps/
