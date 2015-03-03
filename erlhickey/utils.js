@@ -1,7 +1,6 @@
 define(function(require, exports, module) {
-    exports.load = function(url, callback) {
+    exports.load = function(url, callback, errCallback) {
         var xhr;
-        console.log(url);
         if (typeof XMLHttpRequest !== 'undefined') xhr = new XMLHttpRequest();
         else {
             var versions = ["MSXML2.XmlHttp.5.0",
@@ -24,7 +23,10 @@ define(function(require, exports, module) {
 
         function ensureReadiness() {
             if (xhr.readyState === 4) {
-                callback(xhr);
+                if(xhr.status >= 200 && xhr.status < 300)
+                    callback(xhr);
+                else
+                    if(errCallback) errCallback()
             }
         }
 

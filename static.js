@@ -18,6 +18,10 @@ http.createServer(function(req, res) {
     var uri = url.parse(req.url).pathname
       , filename = path.join(process.cwd(), uri);
 
+    console.log(uri);
+    if(uri.length <= 1){
+        uri = "/erlhickey.html"
+    }
     if(isErl(uri)) {
         handleErlCall(uri, req, res)
         return
@@ -158,6 +162,8 @@ var erlCompServer = {};
         env: process.env
     });
 
+
+
     function awaitCompletion(word, callback, acc) {
         acc = acc | "";
         word = word || "";
@@ -194,28 +200,32 @@ var erlCompServer = {};
     function compileModule(name, cb){
         term.write("c('" + name + "').\n");
         var lines = [];
-        var listenForDaya = function() {
+        var listenForData = function() {
             term.once("data", function (data) {
+                var lastRes = false;
                 data.split("\n").map(function (line) {
                     var res = recognizeCompilerLine(line);
                     if (res) {
                         lines.push(res);
-                        console.log("data = " + JSON.stringify(res));
                         if (res.type == "result") {
-                            cb(lines)
+                            cb(lines);
+                            lastRes = true;
                         }
-                        else listenForDaya()
                     }
-                    else listenForDaya()
-                })
+                });
+                if(!lastRes){
+                    listenForData()
+                }
             })
         }
+        listenForData()
     }
     function recognizeCompilerLine(line){
         //if tuple result
         if(!line.length) return undefined;
         line = line.trim();
-        if(/^\{.*\}\s*$/.test(line)){
+
+        if(/^\{.*\}\s*$/.test(line) || /^\S*error*\S$/.test(line)){
             return {
                 type: "result",
                 content: line
@@ -225,21 +235,48 @@ var erlCompServer = {};
         {
             var cake = line.split(":");
             return {
-                type: "info",
+                type: / error /.test(line) ? "error" : "info" ,
                 path: cake[0],
                 line: cake[1],
-                level: cake[2],
-                content: cake.slice(3).join(":")
+                content: cake.slice(2).join(":")
             }
         }
     }
-    function dialyzeModule(name) {
-        term.write("")
+    function dialyzeModule(name, cb) {
+        var dialTerm = pty.spawn('dialyzer', [name, "--quiet"], {
+            name: 'xterm-color',
+            cols: 80,
+            rows: 30,
+            cwd: process.env.HOME,
+            env: process.env
+        });
+        var lines = [];
+        var awaitData = function(){
+            dialTerm.on("data", function(data){
+                data.split("\n").map(function(line){
+                    if(line)lines.push(recognizeDialyzerLine(line))
+                })
+            })
+        };
+        dialTerm.on("exit", function(){
+            cb(lines)
+        });
+        dialTerm.on("error", function(e){
+            cb({err: e})
+        });
+
+        awaitData()
+    }
+    function recognizeDialyzerLine(line){
+        var cake = line.split(":")
+        return {path: cake[0], line: cake[1], content: cake.slice(2).join(":")}
     }
     erlCompServer.awaitCompletion = awaitCompletion;
-    erlCompServer.compile = compileModule
+    erlCompServer.compile = compileModule;
+    erlCompServer.dialyze = dialyzeModule;
 })();
 
 //==================================================================
 //===========================/ErlHickey  ============================
 //==================================================================
+
