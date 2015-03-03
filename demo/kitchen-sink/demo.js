@@ -60,6 +60,7 @@ var Renderer = require("ace/virtual_renderer").VirtualRenderer;
 var Editor = require("ace/editor").Editor;
 
 var whitespace = require("ace/ext/whitespace");
+var erlhickey = require("../../erlhickey/main");
 
 
 
@@ -225,13 +226,15 @@ commands.addCommand({
     name: "save",
     bindKey: {win: "Ctrl-S", mac: "Command-S"},
     exec: function(arg) {
+        erlhickey.compile(env.editor);
+        erlhickey.save(env.editor);
         var session = env.editor.session;
         var name = session.name.match(/[^\/]+$/);
         localStorage.setItem(
             "saved_file:" + name,
             session.getValue()
         );
-        env.editor.cmdLine.setValue("saved "+ name);
+        env.editor.cmdLine.setValue("Saved "+ name);
     }
 });
 
@@ -374,7 +377,7 @@ function updateUIEditorOptions() {
 themelist.themes.forEach(function(x){ x.value = x.theme });
 fillDropdown(themeEl, {
     Bright: themelist.themes.filter(function(x){return !x.isDark}),
-    Dark: themelist.themes.filter(function(x){return x.isDark}),
+    Dark: themelist.themes.filter(function(x){return x.isDark})
 });
 
 event.addListener(themeEl, "mouseover", function(e){
@@ -583,3 +586,20 @@ var beautify = require("ace/ext/beautify");
 env.editor.commands.addCommands(beautify.commands);
 
 });
+
+//==================================================================
+//=========================== ErlHickey ============================
+//==================================================================
+
+function addError(atRow, text){
+    editor.session.setAnnotations([{
+        row: atRow,
+        column: 2,
+        text: text,
+        type: "error"
+    }]);
+}
+
+function compileFile() {
+
+}

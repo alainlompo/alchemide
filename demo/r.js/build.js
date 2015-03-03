@@ -5,7 +5,7 @@
     baseUrl: "../../",
     paths: {
         ace : "lib/ace",
-        demo: "demo/kitchen-sink"        
+        demo: "demo/kitchen-sink"
     },
     packages: [
     ],

@@ -170,6 +170,7 @@ function loadDoc(name, callback) {
 }
 
 function saveDoc(name, callback) {
+    console.log("saving + " + name)
     var doc = fileCache[name] || name;
     if (!doc || !doc.session)
         return callback("Unknown document: " + name);

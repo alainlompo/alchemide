@@ -18,6 +18,11 @@ http.createServer(function(req, res) {
     var uri = url.parse(req.url).pathname
       , filename = path.join(process.cwd(), uri);
 
+    if(isErl(uri)) {
+        handleErlCall(uri, req, res)
+        return
+    }
+
     if (req.method == "PUT") {
         if (!allowSave)
             return error(res, 404, "Saving not allowed pass --allow-save to enable");
@@ -107,3 +112,85 @@ function getLocalIps() {
 
 console.log("http://" + (ip == "0.0.0.0" ? getLocalIps()[0] : ip) + ":" + port);
 
+//==================================================================
+//=========================== ErlHickey ============================
+//==================================================================
+function isErl(uri){
+    return /^\/erl\//.test(uri)
+}
+function handleErlCall(uri, req, res) {
+    var get = getCurr(uri);
+    var url = require('url');
+    var parameters = url.parse(req.url, true).query;
+
+    get(/complete/, function(){
+        erlCompServer.awaitCompletion(parameters["word"], function(result){
+            res.end(JSON.stringify({result : result}))
+        });
+
+    })
+}
+function getCurr(uri) {
+    return function(pathregex, fun){
+        if(pathregex.test(uri)) fun()
+    }
+}
+
+/// INITIALIZATION
+var erlCompServer = {};
+(function(){
+    var pty = require('pty.js');
+
+    var term = pty.spawn('erl', [], {
+        name: 'xterm-color',
+        cols: 80,
+        rows: 30,
+        cwd: process.env.HOME,
+        env: process.env
+    });
+
+    function awaitCompletion(word, callback, acc) {
+        acc = acc | "";
+        word = word || "";
+        console.log("word = " + word);
+
+        term.write(word + "\t");
+        term.once("data", function(data)
+        {
+            console.log("result = " + data)
+            if((new RegExp(">\\s*")).test(data) || data.split(" ").length == 1){
+               callback( prepareResult(acc + data));
+                console.log("good");
+
+                //CLEAR THE CONSOLE
+                term.write("\n")
+            }
+            else {
+                //callback( prepareResult(acc + data));
+                console.log("bad");
+
+                //term.write(".\n");
+                awaitCompletion(word, callback, acc  + "," + data)
+            }
+        })
+    }
+    function prepareResult(res) {
+        res = res.split(/\s+/);
+        if(res.length > 1) {
+            res.splice(0, 1);
+            res.splice(res.length - 2, 2);
+            return res;
+        }
+        else return [res[0].split("").slice(1).join("")]
+
+    }
+
+    function compileModule(){
+        term.write()
+    }
+    erlCompServer.awaitCompletion = awaitCompletion;
+})();
+
+//==================================================================
+//===========================/ErlHickey  ============================
+//==================================================================
