@@ -281,7 +281,7 @@ border:1px solid #baf; z-index:100";
 
 
     /*********** manage layout ***************************/
-    var consoleHeight = 20;
+  /*  var consoleHeight = 20;
 
     function onResize() {
         var left = env.split.$container.offsetLeft;
@@ -295,7 +295,7 @@ border:1px solid #baf; z-index:100";
     }
 
     window.onresize = onResize;
-    onResize();
+    onResize();*/
 
     /*********** options panel ***************************/
     var docEl = document.getElementById("doc");
@@ -623,7 +623,7 @@ $(function () {
             {type: 'top', size: 20, resizable: false, style: pstyle, content: 'top'},
             {type: 'left', size: 200, resizable: true, style: pstyle, content: 'left'},
             {
-                type: 'main', style: pstyle + 'border-top: 0px;', content: 'main',
+                type: 'main', style: pstyle, content: 'main',
                 tabs: {
                     active: 'tab1',
                     tabs: [
@@ -632,21 +632,42 @@ $(function () {
                         {id: 'tab3', caption: 'Tab 3', closable: true},
                     ],
                     onClick: function (event) {
-                        this.owner.content('main', event);
+                        //this.owner.content('main', event);
                     }
                 }
             },
-            {type: "bottom", size: 200, resizable: true, style: pstyle, content: "Terminal"}
+            {type: "bottom", size: 200, resizable: true, style: pstyle, content: "Terminal", tabs: {
+                active: 'tab1',
+                tabs: [
+                    {id: 'tab1', caption: 'Tab 1', closable: true},
+                    {id: 'tab2', caption: 'Tab 2', closable: true},
+                    {id: 'tab3', caption: 'Tab 3', closable: true},
+                ],
+                onClick: function (event) {
+                    console.log(this)
+                    //this.owner.content('main', event);
+                }
+            }}
         ]
     });
     $().w2layout({
         name: "editorLayout",
         panels: [
             {type: 'main', resizable: true, style: pstyle, content: 'main'},
-            {type: 'right', resizable: true, style: pstyle, content: 'right'}]
+            {type: 'right', resizable: true, style: pstyle, content: 'right'}],
+        onResize: function(event) {
+            console.log("resizing");
+            setInterval( function(){try { env.split.resize() } catch(e) {}}, 0)
+        }
 
     });
     w2ui['layout'].content('main', w2ui["editorLayout"]);
     w2ui['editorLayout'].content('main', "<div id='editor-container'></div>")
+    w2ui['layout'].content('bottom', "<div id='terminal-container' ></div>")
 
 });
+
+function loadTerminal()
+{
+
+}
