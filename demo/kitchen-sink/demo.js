@@ -86,10 +86,12 @@ define(function (require, exports, module) {
 
     /*********** create editor ***************************/
     var container = document.getElementById("editor-container");
+    var secondary_container = document.getElementById("editor-secondary-container");
 
 // Splitting.
     var Split = require("ace/split").Split;
     var split = new Split(container, theme, 1);
+    var split2 = new Split(secondary_container, theme, 1);
     env.editor = split.getEditor(0);
     split.on("focus", function (editor) {
         env.editor = editor;
@@ -98,6 +100,7 @@ define(function (require, exports, module) {
 
 
     env.split = split;
+    env.split2 = split2;
     window.env = env;
 
 
@@ -322,7 +325,8 @@ border:1px solid #baf; z-index:100";
     bindDropdown("mode", function (value) {
         env.editor.session.setMode(modesByName[value].mode || modesByName.text.mode);
         env.editor.session.modeName = value;
-
+        env.split2.getEditor(0).session.setMode(modesByName[value].mode || modesByName.text.mode);
+        env.split2.getEditor(0).session.modeName = value;
     });
 
     doclist.history = doclist.docs.map(function (doc) {
@@ -362,10 +366,11 @@ border:1px solid #baf; z-index:100";
         });
     });
 
-
+    window.updateUIEditorOptions = updateUIEditorOptions;
     function updateUIEditorOptions() {
         var editor = env.editor;
         var session = editor.session;
+        var session2 = split2.getEditor(0).session;
 
         session.setFoldStyle(foldingEl.value);
 
@@ -412,6 +417,7 @@ border:1px solid #baf; z-index:100";
 
     themeEl.updateTheme = function () {
         env.split.setTheme((themeEl.desiredValue || themeEl.selectedValue));
+        env.split2.setTheme((themeEl.desiredValue || themeEl.selectedValue));
         themeEl.$timer = null;
     };
 
@@ -419,6 +425,7 @@ border:1px solid #baf; z-index:100";
         if (!value)
             return;
         env.editor.setTheme(value);
+        env.split2.getEditor(0).setTheme(value)
         themeEl.selectedValue = value;
     });
 
@@ -616,7 +623,7 @@ var addTab = function (name, filepath) {
 };
 window.addTab = addTab
 $(function () {
-    var pstyle = 'border: 1px solid #dfdfdf; padding: 5px;';
+    var pstyle = 'border: 1px solid #585858; padding: 0px; margin: 2px';
     $('#layout').w2layout({
         name: 'layout',
         panels: [
@@ -656,13 +663,15 @@ $(function () {
             {type: 'main', resizable: true, style: pstyle, content: 'main'},
             {type: 'right', resizable: true, style: pstyle, content: 'right'}],
         onResize: function(event) {
-            console.log("resizing");
+            //console.log("resizing");
             setInterval( function(){try { env.split.resize() } catch(e) {}}, 0)
+            setInterval( function(){try { env.split2.resize() } catch(e) {}}, 0)
         }
 
     });
     w2ui['layout'].content('main', w2ui["editorLayout"]);
-    w2ui['editorLayout'].content('main', "<div id='editor-container'></div>")
+    w2ui['editorLayout'].content('main', "<div class='editor-container' id='editor-container'></div>")
+    w2ui['editorLayout'].content('right', "<div  class='editor-container' id='editor-secondary-container'></div>")
     w2ui['layout'].content('bottom', "<div id='terminal-container' ></div>")
 
 });
