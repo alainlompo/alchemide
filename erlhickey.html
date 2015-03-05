@@ -15,6 +15,12 @@
     <link rel="stylesheet" type="text/css" href="http://w2ui.com/src/w2ui-1.4.2.min.css" />
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
     <script type="text/javascript" src="http://w2ui.com/src/w2ui-1.4.2.min.js"></script>
+    <script src="lib/socket.io-1.3.4.js"></script>
+    <script src="lib/jquery.terminal-0.8.8.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="lib/jquery.terminal.css"/>
+
+    <link rel="stylesheet" type="text/css" href="lib/jstree/themes/proton/style.css"/>
+    <script src="lib/jstree/jstree.min.js"></script>
 </head>
 <body>
 <div id="optionsPanel" style="position:absolute;height:100%;width:100%">
@@ -287,6 +293,25 @@
     require("kitchen-sink/demo");
   </script>
     PACKAGE-->
-
+<div id="popup1" style="display: none; width: 650px; height: 400px; overflow: auto">
+    <div rel="title">
+        ErlHickey 0.3.4
+    </div>
+    <div rel="body">
+        <div style="padding: 10; font-size: 15px; line-height: 150%;">
+            <div style="float:left; background-color:white; width:150px; height:80px; border: 1px solid silver; margin:5px;">
+            </div>
+            Welcome to early-stage alpha version of Hickey Editor.
+            We're trying our best to make fully-fledged Erlang/Elixir editor.
+            Yet there is still a lot to be done.
+            Please be prepared for bugs and potholes.
+            If You hit any issue, feel free to report that on
+            <a href= https://github.com/iraasta/erlhickey/issues target="_blank"> Github Issue Page</a>
+        </div>
+    </div>
+    <div rel="buttons">
+        <!--<button class="btn" onclick="$('#popup1').w2popup()">Close</button>-->
+    </div>
+</div>
 </body>
 </html>

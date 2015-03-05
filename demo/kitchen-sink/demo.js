@@ -58,10 +58,11 @@ define(function (require, exports, module) {
 
     var Renderer = require("ace/virtual_renderer").VirtualRenderer;
     var Editor = require("ace/editor").Editor;
+    window.AceDocument = require("ace/document").Document;
+
 
     var whitespace = require("ace/ext/whitespace");
     var erlhickey = require("../../erlhickey/main");
-
 
     var doclist = require("./doclist");
     var modelist = require("ace/ext/modelist");
@@ -545,6 +546,7 @@ border:1px solid #baf; z-index:100";
         }
     });
 
+
     var StatusBar = require("ace/ext/statusbar").StatusBar;
     new StatusBar(env.editor, cmdLine.container);
 
@@ -623,6 +625,9 @@ var addTab = function (name, filepath) {
 };
 window.addTab = addTab
 $(function () {
+
+    //TODO Uncomment $("#popup1").w2popup();
+
     var pstyle = 'border: 1px solid #585858; padding: 0px; margin: 2px';
     $('#layout').w2layout({
         name: 'layout',
@@ -640,15 +645,19 @@ $(function () {
                     ],
                     onClick: function (event) {
                         //this.owner.content('main', event);
+                    },
+                    onClose: function (e){
+                        if(w2ui['layout_main_tabs'].active == e.target) {
+                            env.editor.session.setDocument(new AceDocument(""))
+                        }
+                        console.log(e)
                     }
                 }
             },
             {type: "bottom", size: 200, resizable: true, style: pstyle, content: "Terminal", tabs: {
                 active: 'tab1',
                 tabs: [
-                    {id: 'tab1', caption: 'Tab 1', closable: true},
-                    {id: 'tab2', caption: 'Tab 2', closable: true},
-                    {id: 'tab3', caption: 'Tab 3', closable: true},
+                    {id: 'terminal', caption: 'Terminal', closable: true},
                 ],
                 onClick: function (event) {
                     console.log(this)
@@ -670,13 +679,150 @@ $(function () {
 
     });
     w2ui['layout'].content('main', w2ui["editorLayout"]);
+    w2ui['layout'].content('left', "<div id='dir-tree'></div>");
     w2ui['editorLayout'].content('main', "<div class='editor-container' id='editor-container'></div>")
     w2ui['editorLayout'].content('right', "<div  class='editor-container' id='editor-secondary-container'></div>")
-    w2ui['layout'].content('bottom', "<div id='terminal-container' ></div>")
+    w2ui['layout'].content('bottom', "<div class='terminal-container'></div>")
 
+    var prompt;
+    var tabWasLast = 0;
+    var lastInput = "";
+    var lastSent = ""
+    window.terminal = $(".terminal-container").terminal(function(command, term) {
+        enterCommand(command)
+        lastInput = ""
+    }, {
+        greetings: 'Javascript Interpreter',
+        name: 'js_demo',
+        color: "white",
+        background: "blue",
+        prompt: ""/*function(cb){
+            prompt = cb;
+        }*/,
+        exit: false,
+        completion: false,
+        onExit: function(){
+            console.log("yo")
+
+        },
+        keydown: function(e) {
+            //is focused
+            if ($(".cursor").hasClass("blink")) {
+                if(e.ctrlKey){
+                    if(e.keyCode == "D".charCodeAt(0)){
+                        enterCommand("\04")
+                    }
+                    if(e.keyCode == "C".charCodeAt(0)){
+                        enterCommand("\03")
+                    }
+                    return false
+                }
+                //tab
+                if(e.keyCode == 9){
+                    enterTab();
+                    return false
+                }
+                if(e.keyCode == 8){
+                    lastInput = lastInput.substring(0, lastInput.length-1)
+                    socket.emit("data", "\b")
+                }
+            }
+    }
+    });
+    var RESULT_BUFFER_PERIOD = 100;
+    var  cmdInput = $(".cmd span:eq(1)")
+    var socket = io("http://" + window.location.host)
+
+    var bufferEE = function(emiter, event ,onListener, period, after){
+        emiter.on(event, onListener);
+
+        var flush = function(){
+            emiter.removeListener(event, onListener);
+            after()
+        };
+        setTimeout(flush , period);
+
+        return {
+            flush : function(){
+                clearTimeout(flush(), period)
+                flush()
+            }
+        }
+    };
+    function enterCommand(command){
+        terminal.pause();
+        var acc = "";
+        socket.emit("data", command.replace(lastInput, '') +"\n")
+        bufferEE(socket, "data", function(data){
+            acc += data
+        }, 1000, function(){
+            acc = acc.replace(command, "");
+            acc = acc.replace(command, "");
+            acc = acc.replace("\n", "");
+            lastInput = ""
+            displayLines(acc);
+        })
+    }
+    function enterTab(){
+        var toSend = cmdInput.text();
+        toSend = toSend.replace(lastInput, "");
+        socket.emit("data", toSend + "\t");
+        lastSent = toSend
+        var acc = "";
+
+        bufferEE(socket, "data", function(data){
+                acc+= data
+            }
+        , RESULT_BUFFER_PERIOD , function(){
+            var cake = acc.split("\n")
+
+            if(cake.length == 1){
+                var line = cake.join();
+                line.replace(lastSent, "");
+                lastInput += line;
+                terminal.set_command(lastInput);
+                return
+            }
+            displayLines(acc)
+        })
+    }
+    function displayLines(input){
+        var cake = input.split("\n")
+        console.log(cake)
+
+        var lastLine = cake[cake.length-1];
+        var lastLineCake = lastLine.trim().split(" ");
+
+        cake.slice(0,cake.length-1).map(terminal.echo)
+        terminal.set_prompt(lastLineCake[0] + " ")
+        terminal.set_command(lastLineCake.slice(1).join())
+        lastInput = lastLineCake.slice(1).join()
+
+        terminal.resume();
+
+    }
+
+    window.socket = socket
+
+    // Dir tree
+
+    $('#dir-tree').jstree({ 'core' : {
+        'themes': {
+            'name': 'proton',
+            'responsive': true
+        },
+        'data' : [
+            { "id" : "ajson1", "parent" : "#", "text" : "Simple root node" },
+            { "id" : "ajson2", "parent" : "#", "text" : "Root node 2" },
+            { "id" : "ajson3", "parent" : "ajson2", "text" : "Child 1" },
+            { "id" : "ajson4", "parent" : "ajson2", "text" : "Child 2" },
+            { "id" : "ajson5", "parent" : "ajson1", "text" : "Child 2" },
+        ],
+        "check_callback" : true
+    },
+        "plugins" : [
+            "contextmenu", "dnd", "search",
+            "state", "types", "wholerow"
+        ]});
 });
 
-function loadTerminal()
-{
-
-}

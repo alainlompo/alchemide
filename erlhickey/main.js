@@ -42,10 +42,57 @@ define(function(require, exports, module) {
         }
 
     };
-    if(mode && /erlang/.test(mode.$id)) {
-        this.off("change", erlangIndent);
-        this.on("change", erlangIndent)
-    }
+    exports.isErlang = function(mode){return (mode && /erlang/.test(mode.$id))}
+    exports.isElixir = function(mode){return (mode && /elixir/.test(mode.$id))}
     //ERL HICKEY
+    exports.getCompletion = function(word, wordList, wordScore, pos, editor, callback, isElixir){
+        var target = isElixir ? "elixir" : "erl";
 
+        var context = editor.session.getDocument().getLine(pos.row).slice(0,pos.column).split(/( |\(|\))/);
+        var lastWord = context[context.length-1];
+
+        //Last word is module or definition
+        if(/^\w+(\.|:)\w*/.test(lastWord)){
+            word = lastWord
+        }
+        utils.load(word ? "/"+target+"/complete?word="+word: "/"+target+"/complete", function(res){
+            var words = JSON.parse(res.response)["result"];
+            var localWords = wordList.map(function(word) {
+                return {
+                    caption: word,
+                    value: word,
+                    score: wordScore[word],
+                    meta: "local"
+                };
+            });
+            var globalWords = words.map(function(word) {
+
+                var cleanWords = word.split("/")[0].split(/(\.|:)/);
+                return {
+                    caption: word,
+                    value: cleanWords[cleanWords.length-1] || word,
+                    score: 10000,
+                    meta: "global"
+                }
+            });
+            console.log(globalWords);
+            callback(null, localWords.concat(globalWords))
+        }, function(){  //ON ERROR
+            var localWords = wordList.map(function(word) {
+                return {
+                    caption: word,
+                    value: word,
+                    score: wordScore[word],
+                    meta: "local"
+                };
+            });
+            callback(localWords)
+        })
+
+    }
+
+
+    //==================================================================
+    //===========================/ErlHickey  ============================
+    //==================================================================
 });
