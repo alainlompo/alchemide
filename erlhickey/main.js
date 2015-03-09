@@ -3,21 +3,35 @@ define(function(require, exports, module) {
 
     var erlhickey = exports;
     var utils = require("./utils");
-    exports.compile = function(editor) {
-        utils.load("erl/compile?name" + editor.session.name, function(result){
-            console.log(result)
+    exports.compile = function(editor, isElixir) {
+        editor.session.setAnnotations([]);
+        console.log("compiling: " + (isElixir ? "elixir" : "erl") + "/compile?module=" + window.project.path + editor.session.name)
+        utils.load((isElixir ? "elixir" : "erl") + "/compile?module=" + window.project.path + editor.session.name, function(result){
+            console.log(result.response)
+            var res = JSON.parse(result.response);
+            res.map (function(line){
+                console.log(line)
+                if(line["type"] != "result")addAnnot(editor, parseInt(line.line)-1, line.content, line.type)
+            })
         })
     };
     exports.save = function(editor) {
-
+        var mode = editor.session.getMode();
+        var isErlang = erlhickey.isErlang(mode)
+        var isElixir = erlhickey.isElixir(mode)
+        if(isElixir || isErlang){
+            erlhickey.compile(editor, isElixir)
+        }
     };
-    function addError(editor, atRow, text){
-        editor.session.setAnnotations([{
+    function addAnnot(editor, atRow, text, type){
+        editor.session.setAnnotations(
+            editor.session.getAnnotations().concat(
+            [{
             row: atRow,
             column: 2,
             text: text,
-            type: "error"
-        }]);
+            type: type
+        }]) );
     }
     exports.indentTest = function(line){
         if(/(->|receive|try|\{)\s*$/.test(line)) return true;
@@ -32,7 +46,7 @@ define(function(require, exports, module) {
     exports.erlangCheckIndent  = function(line, indentf, outdentf){
         //indent rules
         if(erlhickey.indentTest(line)){
-            console.log("indent")
+            console.log("indent");
             indentf();
         }
         //oudentrules

@@ -51,7 +51,6 @@ define(function (require, exports, module) {
 
     var event = require("ace/lib/event");
     var theme = require("ace/theme/textmate");
-    var EditSession = require("ace/edit_session").EditSession;
     var UndoManager = require("ace/undomanager").UndoManager;
 
     var HashHandler = require("ace/keyboard/hash_handler").HashHandler;
@@ -64,16 +63,14 @@ define(function (require, exports, module) {
     var whitespace = require("ace/ext/whitespace");
     var erlhickey = require("../../erlhickey/main");
 
-    var doclist = require("./doclist");
+    window.doclist = require("./doclist");
     var modelist = require("ace/ext/modelist");
     var themelist = require("ace/ext/themelist");
     var layout = require("./layout");
     var TokenTooltip = require("./token_tooltip").TokenTooltip;
     var util = require("./util");
     var saveOption = util.saveOption;
-    var fillDropdown = util.fillDropdown;
     var bindCheckbox = util.bindCheckbox;
-    var bindDropdown = util.bindDropdown;
 
     var ElasticTabstopsLite = require("ace/ext/elastic_tabstops_lite").ElasticTabstopsLite;
 
@@ -85,744 +82,347 @@ define(function (require, exports, module) {
         workerModule.WorkerClient = workerModule.UIWorkerClient;
     }
 
-    /*********** create editor ***************************/
-    var container = document.getElementById("editor-container");
-    var secondary_container = document.getElementById("editor-secondary-container");
+    exports.init = function() {
+        /*********** create editor ***************************/
+        var container = $("#editor-container").get()[0];
+        var secondary_container = $("#editor-secondary-container").get()[0];
 
 // Splitting.
-    var Split = require("ace/split").Split;
-    var split = new Split(container, theme, 1);
-    var split2 = new Split(secondary_container, theme, 1);
-    env.editor = split.getEditor(0);
-    split.on("focus", function (editor) {
-        env.editor = editor;
-        updateUIEditorOptions();
-    });
+        var Split = require("ace/split").Split;
+        var split = new Split(container, theme, 1);
+        var split2 = new Split(secondary_container, theme, 1);
+        env.editor = split.getEditor(0);
+        split.on("focus", function (editor) {
+            env.editor = editor;
+        });
 
 
-    env.split = split;
-    env.split2 = split2;
-    window.env = env;
+        env.split = split;
+        env.split2 = split2;
+        window.env = env;
+        env.editor.setFontSize(14);
 
-
-    var consoleEl = dom.createElement("div");
-    container.parentNode.appendChild(consoleEl);
-    consoleEl.style.cssText = "position:fixed; bottom:1px; right:0;\
+        var consoleEl = dom.createElement("div");
+        container.parentNode.appendChild(consoleEl);
+        consoleEl.style.cssText = "position:fixed; bottom:1px; right:0;\
 border:1px solid #baf; z-index:100";
 
-    var cmdLine = new layout.singleLineEditor(consoleEl);
-    cmdLine.editor = env.editor;
-    env.editor.cmdLine = cmdLine;
+        var cmdLine = new layout.singleLineEditor(consoleEl);
+        cmdLine.editor = env.editor;
+        env.editor.cmdLine = cmdLine;
 
-    env.editor.showCommandLine = function (val) {
-        this.cmdLine.focus();
-        if (typeof val == "string")
-            this.cmdLine.setValue(val, 1);
-    };
+        env.editor.showCommandLine = function (val) {
+            this.cmdLine.focus();
+            if (typeof val == "string")
+                this.cmdLine.setValue(val, 1);
+        };
 
-    /**
-     * This demonstrates how you can define commands and bind shortcuts to them.
-     */
-    env.editor.commands.addCommands([{
-        name: "gotoline",
-        bindKey: {win: "Ctrl-L", mac: "Command-L"},
-        exec: function (editor, line) {
-            if (typeof line == "object") {
-                var arg = this.name + " " + editor.getCursorPosition().row;
-                editor.cmdLine.setValue(arg, 1);
+        /**
+         * This demonstrates how you can define commands and bind shortcuts to them.
+         */
+        env.editor.commands.addCommands([{
+            name: "gotoline",
+            bindKey: {win: "Ctrl-L", mac: "Command-L"},
+            exec: function (editor, line) {
+                if (typeof line == "object") {
+                    var arg = this.name + " " + editor.getCursorPosition().row;
+                    editor.cmdLine.setValue(arg, 1);
+                    editor.cmdLine.focus();
+                    return;
+                }
+                line = parseInt(line, 10);
+                if (!isNaN(line))
+                    editor.gotoLine(line);
+            },
+            readOnly: true
+        }, {
+            name: "snippet",
+            bindKey: {win: "Alt-C", mac: "Command-Alt-C"},
+            exec: function (editor, needle) {
+                if (typeof needle == "object") {
+                    editor.cmdLine.setValue("snippet ", 1);
+                    editor.cmdLine.focus();
+                    return;
+                }
+                var s = snippetManager.getSnippetByName(needle, editor);
+                if (s)
+                    snippetManager.insertSnippet(editor, s.content);
+            },
+            readOnly: true
+        }, {
+            name: "focusCommandLine",
+            bindKey: "shift-esc|ctrl-`",
+            exec: function (editor, needle) {
                 editor.cmdLine.focus();
-                return;
+            },
+            readOnly: true
+        }, {
+            name: "nextFile",
+            bindKey: "Ctrl-tab",
+            exec: function (editor) {
+                doclist.cycleOpen(editor, 1);
+            },
+            readOnly: true
+        }, {
+            name: "previousFile",
+            bindKey: "Ctrl-shift-tab",
+            exec: function (editor) {
+                doclist.cycleOpen(editor, -1);
+            },
+            readOnly: true
+        }, {
+            name: "execute",
+            bindKey: "ctrl+enter",
+            exec: function (editor) {
+                try {
+                    var r = window.eval(editor.getCopyText() || editor.getValue());
+                } catch (e) {
+                    r = e;
+                }
+                editor.cmdLine.setValue(r + "");
+            },
+            readOnly: true
+        }, {
+            name: "showKeyboardShortcuts",
+            bindKey: {win: "Ctrl-Alt-h", mac: "Command-Alt-h"},
+            exec: function (editor) {
+                config.loadModule("ace/ext/keybinding_menu", function (module) {
+                    module.init(editor);
+                    editor.showKeyboardShortcuts();
+                });
             }
-            line = parseInt(line, 10);
-            if (!isNaN(line))
-                editor.gotoLine(line);
-        },
-        readOnly: true
-    }, {
-        name: "snippet",
-        bindKey: {win: "Alt-C", mac: "Command-Alt-C"},
-        exec: function (editor, needle) {
-            if (typeof needle == "object") {
-                editor.cmdLine.setValue("snippet ", 1);
-                editor.cmdLine.focus();
-                return;
+        }, {
+            name: "increaseFontSize",
+            bindKey: "Ctrl-=|Ctrl-+",
+            exec: function (editor) {
+                var size = parseInt(editor.getFontSize(), 10) || 12;
+                editor.setFontSize(size + 1);
             }
-            var s = snippetManager.getSnippetByName(needle, editor);
-            if (s)
-                snippetManager.insertSnippet(editor, s.content);
-        },
-        readOnly: true
-    }, {
-        name: "focusCommandLine",
-        bindKey: "shift-esc|ctrl-`",
-        exec: function (editor, needle) {
-            editor.cmdLine.focus();
-        },
-        readOnly: true
-    }, {
-        name: "nextFile",
-        bindKey: "Ctrl-tab",
-        exec: function (editor) {
-            doclist.cycleOpen(editor, 1);
-        },
-        readOnly: true
-    }, {
-        name: "previousFile",
-        bindKey: "Ctrl-shift-tab",
-        exec: function (editor) {
-            doclist.cycleOpen(editor, -1);
-        },
-        readOnly: true
-    }, {
-        name: "execute",
-        bindKey: "ctrl+enter",
-        exec: function (editor) {
-            try {
-                var r = window.eval(editor.getCopyText() || editor.getValue());
-            } catch (e) {
-                r = e;
+        }, {
+            name: "decreaseFontSize",
+            bindKey: "Ctrl+-|Ctrl-_",
+            exec: function (editor) {
+                var size = parseInt(editor.getFontSize(), 10) || 12;
+                editor.setFontSize(Math.max(size - 1 || 1));
             }
-            editor.cmdLine.setValue(r + "");
-        },
-        readOnly: true
-    }, {
-        name: "showKeyboardShortcuts",
-        bindKey: {win: "Ctrl-Alt-h", mac: "Command-Alt-h"},
-        exec: function (editor) {
-            config.loadModule("ace/ext/keybinding_menu", function (module) {
-                module.init(editor);
-                editor.showKeyboardShortcuts();
-            });
-        }
-    }, {
-        name: "increaseFontSize",
-        bindKey: "Ctrl-=|Ctrl-+",
-        exec: function (editor) {
-            var size = parseInt(editor.getFontSize(), 10) || 12;
-            editor.setFontSize(size + 1);
-        }
-    }, {
-        name: "decreaseFontSize",
-        bindKey: "Ctrl+-|Ctrl-_",
-        exec: function (editor) {
-            var size = parseInt(editor.getFontSize(), 10) || 12;
-            editor.setFontSize(Math.max(size - 1 || 1));
-        }
-    }, {
-        name: "resetFontSize",
-        bindKey: "Ctrl+0|Ctrl-Numpad0",
-        exec: function (editor) {
-            editor.setFontSize(12);
-        }
-    }]);
-
-
-    env.editor.commands.addCommands(whitespace.commands);
-
-    cmdLine.commands.bindKeys({
-        "Shift-Return|Ctrl-Return|Alt-Return": function (cmdLine) {
-            cmdLine.insert("\n");
-        },
-        "Esc|Shift-Esc": function (cmdLine) {
-            cmdLine.editor.focus();
-        },
-        "Return": function (cmdLine) {
-            var command = cmdLine.getValue().split(/\s+/);
-            var editor = cmdLine.editor;
-            editor.commands.exec(command[0], editor, command[1]);
-            editor.focus();
-        }
-    });
-
-    cmdLine.commands.removeCommands(["find", "gotoline", "findall", "replace", "replaceall"]);
-
-    var commands = env.editor.commands;
-    commands.addCommand({
-        name: "save",
-        bindKey: {win: "Ctrl-S", mac: "Command-S"},
-        exec: function (arg) {
-            erlhickey.compile(env.editor);
-            erlhickey.save(env.editor);
-            var session = env.editor.session;
-            var name = session.name.match(/[^\/]+$/);
-            localStorage.setItem(
-                "saved_file:" + name,
-                session.getValue()
-            );
-            env.editor.cmdLine.setValue("Saved " + name);
-        }
-    });
-
-    commands.addCommand({
-        name: "load",
-        bindKey: {win: "Ctrl-O", mac: "Command-O"},
-        exec: function (arg) {
-            var session = env.editor.session;
-            var name = session.name.match(/[^\/]+$/);
-            var value = localStorage.getItem("saved_file:" + name);
-            if (typeof value == "string") {
-                session.setValue(value);
-                env.editor.cmdLine.setValue("loaded " + name);
-            } else {
-                env.editor.cmdLine.setValue("no previuos value saved for " + name);
+        }, {
+            name: "resetFontSize",
+            bindKey: "Ctrl+0|Ctrl-Numpad0",
+            exec: function (editor) {
+                editor.setFontSize(12);
             }
-        }
-    });
-
-    var keybindings = {
-        ace: null, // Null = use "default" keymapping
-        vim: require("ace/keyboard/vim").handler,
-        emacs: "ace/keyboard/emacs",
-        // This is a way to define simple keyboard remappings
-        custom: new HashHandler({
-            "gotoright": "Tab",
-            "indent": "]",
-            "outdent": "[",
-            "gotolinestart": "^",
-            "gotolineend": "$"
-        })
-    };
+        }]);
 
 
-    /*********** manage layout ***************************/
-  /*  var consoleHeight = 20;
+        env.editor.commands.addCommands(whitespace.commands);
 
-    function onResize() {
-        var left = env.split.$container.offsetLeft;
-        var width = document.documentElement.clientWidth - left;
-        container.style.width = width + "px";
-        container.style.height = document.documentElement.clientHeight - consoleHeight + "px";
-        env.split.resize();
-
-        consoleEl.style.width = width + "px";
-        cmdLine.resize();
-    }
-
-    window.onresize = onResize;
-    onResize();*/
-
-    /*********** options panel ***************************/
-    var docEl = document.getElementById("doc");
-    var modeEl = document.getElementById("mode");
-    var wrapModeEl = document.getElementById("soft_wrap");
-    var themeEl = document.getElementById("theme");
-    var foldingEl = document.getElementById("folding");
-    var selectStyleEl = document.getElementById("select_style");
-    var highlightActiveEl = document.getElementById("highlight_active");
-    var showHiddenEl = document.getElementById("show_hidden");
-    var showGutterEl = document.getElementById("show_gutter");
-    var showPrintMarginEl = document.getElementById("show_print_margin");
-    var highlightSelectedWordE = document.getElementById("highlight_selected_word");
-    var showHScrollEl = document.getElementById("show_hscroll");
-    var showVScrollEl = document.getElementById("show_vscroll");
-    var animateScrollEl = document.getElementById("animate_scroll");
-    var softTabEl = document.getElementById("soft_tab");
-    var behavioursEl = document.getElementById("enable_behaviours");
-
-    fillDropdown(docEl, doclist.all);
-
-    fillDropdown(modeEl, modelist.modes);
-    var modesByName = modelist.modesByName;
-    bindDropdown("mode", function (value) {
-        env.editor.session.setMode(modesByName[value].mode || modesByName.text.mode);
-        env.editor.session.modeName = value;
-        env.split2.getEditor(0).session.setMode(modesByName[value].mode || modesByName.text.mode);
-        env.split2.getEditor(0).session.modeName = value;
-    });
-
-    doclist.history = doclist.docs.map(function (doc) {
-        return doc.name;
-    });
-    doclist.history.index = 0;
-    doclist.cycleOpen = function (editor, dir) {
-        var h = this.history;
-        h.index += dir;
-        if (h.index >= h.length)
-            h.index = 0;
-        else if (h.index <= 0)
-            h.index = h.length - 1;
-        var s = h[h.index];
-        docEl.value = s;
-        docEl.onchange();
-    };
-    doclist.addToHistory = function (name) {
-        var h = this.history;
-        var i = h.indexOf(name);
-        if (i != h.index) {
-            if (i != -1)
-                h.splice(i, 1);
-            h.index = h.push(name);
-        }
-    };
-
-    bindDropdown("doc", function (name) {
-        doclist.loadDoc(name, function (session) {
-            if (!session)
-                return;
-            doclist.addToHistory(session.name);
-            session = env.split.setSession(session);
-            whitespace.detectIndentation(session);
-            updateUIEditorOptions();
-            env.editor.focus();
+        cmdLine.commands.bindKeys({
+            "Shift-Return|Ctrl-Return|Alt-Return": function (cmdLine) {
+                cmdLine.insert("\n");
+            },
+            "Esc|Shift-Esc": function (cmdLine) {
+                cmdLine.editor.focus();
+            },
+            "Return": function (cmdLine) {
+                var command = cmdLine.getValue().split(/\s+/);
+                var editor = cmdLine.editor;
+                editor.commands.exec(command[0], editor, command[1]);
+                editor.focus();
+            }
         });
-    });
 
-    window.updateUIEditorOptions = updateUIEditorOptions;
-    function updateUIEditorOptions() {
-        var editor = env.editor;
-        var session = editor.session;
-        var session2 = split2.getEditor(0).session;
+        cmdLine.commands.removeCommands(["find", "gotoline", "findall", "replace", "replaceall"]);
 
-        session.setFoldStyle(foldingEl.value);
-
-        saveOption(docEl, session.name);
-        saveOption(modeEl, session.modeName || "text");
-        saveOption(wrapModeEl, session.getUseWrapMode() ? session.getWrapLimitRange().min || "free" : "off");
-
-        saveOption(selectStyleEl, editor.getSelectionStyle() == "line");
-        saveOption(themeEl, editor.getTheme());
-        saveOption(highlightActiveEl, editor.getHighlightActiveLine());
-        saveOption(showHiddenEl, editor.getShowInvisibles());
-        saveOption(showGutterEl, editor.renderer.getShowGutter());
-        saveOption(showPrintMarginEl, editor.renderer.getShowPrintMargin());
-        saveOption(highlightSelectedWordE, editor.getHighlightSelectedWord());
-        saveOption(showHScrollEl, editor.renderer.getHScrollBarAlwaysVisible());
-        saveOption(animateScrollEl, editor.getAnimatedScroll());
-        saveOption(softTabEl, session.getUseSoftTabs());
-        saveOption(behavioursEl, editor.getBehavioursEnabled());
-    }
-
-    themelist.themes.forEach(function (x) {
-        x.value = x.theme
-    });
-    fillDropdown(themeEl, {
-        Bright: themelist.themes.filter(function (x) {
-            return !x.isDark
-        }),
-        Dark: themelist.themes.filter(function (x) {
-            return x.isDark
-        })
-    });
-
-    event.addListener(themeEl, "mouseover", function (e) {
-        themeEl.desiredValue = e.target.value;
-        if (!themeEl.$timer)
-            themeEl.$timer = setTimeout(themeEl.updateTheme);
-    });
-
-    event.addListener(themeEl, "mouseout", function (e) {
-        themeEl.desiredValue = null;
-        if (!themeEl.$timer)
-            themeEl.$timer = setTimeout(themeEl.updateTheme, 20);
-    });
-
-    themeEl.updateTheme = function () {
-        env.split.setTheme((themeEl.desiredValue || themeEl.selectedValue));
-        env.split2.setTheme((themeEl.desiredValue || themeEl.selectedValue));
-        themeEl.$timer = null;
-    };
-
-    bindDropdown("theme", function (value) {
-        if (!value)
-            return;
-        env.editor.setTheme(value);
-        env.split2.getEditor(0).setTheme(value)
-        themeEl.selectedValue = value;
-    });
-
-    bindDropdown("keybinding", function (value) {
-        env.editor.setKeyboardHandler(keybindings[value]);
-    });
-
-    bindDropdown("fontsize", function (value) {
-        env.split.setFontSize(value);
-    });
-
-    bindDropdown("folding", function (value) {
-        env.editor.session.setFoldStyle(value);
-        env.editor.setShowFoldWidgets(value !== "manual");
-    });
-
-    bindDropdown("soft_wrap", function (value) {
-        env.editor.setOption("wrap", value);
-    });
-
-    bindCheckbox("select_style", function (checked) {
-        env.editor.setOption("selectionStyle", checked ? "line" : "text");
-    });
-
-    bindCheckbox("highlight_active", function (checked) {
-        env.editor.setHighlightActiveLine(checked);
-    });
-
-    bindCheckbox("show_hidden", function (checked) {
-        env.editor.setShowInvisibles(checked);
-    });
-
-    bindCheckbox("display_indent_guides", function (checked) {
-        env.editor.setDisplayIndentGuides(checked);
-    });
-
-    bindCheckbox("show_gutter", function (checked) {
-        env.editor.renderer.setShowGutter(checked);
-    });
-
-    bindCheckbox("show_print_margin", function (checked) {
-        env.editor.renderer.setShowPrintMargin(checked);
-    });
-
-    bindCheckbox("highlight_selected_word", function (checked) {
-        env.editor.setHighlightSelectedWord(checked);
-    });
-
-    bindCheckbox("show_hscroll", function (checked) {
-        env.editor.setOption("hScrollBarAlwaysVisible", checked);
-    });
-
-    bindCheckbox("show_vscroll", function (checked) {
-        env.editor.setOption("vScrollBarAlwaysVisible", checked);
-    });
-
-    bindCheckbox("animate_scroll", function (checked) {
-        env.editor.setAnimatedScroll(checked);
-    });
-
-    bindCheckbox("soft_tab", function (checked) {
-        env.editor.session.setUseSoftTabs(checked);
-    });
-
-    bindCheckbox("enable_behaviours", function (checked) {
-        env.editor.setBehavioursEnabled(checked);
-    });
-
-    bindCheckbox("fade_fold_widgets", function (checked) {
-        env.editor.setFadeFoldWidgets(checked);
-    });
-    bindCheckbox("read_only", function (checked) {
-        env.editor.setReadOnly(checked);
-    });
-    bindCheckbox("scrollPastEnd", function (checked) {
-        env.editor.setOption("scrollPastEnd", checked);
-    });
-
-
-    bindCheckbox("elastic_tabstops", function (checked) {
-        env.editor.setOption("useElasticTabstops", checked);
-    });
-
-    var iSearchCheckbox = bindCheckbox("isearch", function (checked) {
-        env.editor.setOption("useIncrementalSearch", checked);
-    });
-
-    env.editor.addEventListener('incrementalSearchSettingChanged', function (event) {
-        iSearchCheckbox.checked = event.isEnabled;
-    });
-
-
-    function synchroniseScrolling() {
-        var s1 = env.split.$editors[0].session;
-        var s2 = env.split.$editors[1].session;
-        s1.on('changeScrollTop', function (pos) {
-            s2.setScrollTop(pos)
+        var commands = env.editor.commands;
+        commands.addCommand({
+            name: "save",
+            bindKey: {win: "Ctrl-S", mac: "Command-S"},
+            exec: function (arg) {
+                var session = env.editor.session;
+                $.ajax(project.path + session.name,{
+                    method: "PUT",
+                    data: session.getDocument().getValue()
+                }).done(function(){
+                    erlhickey.save(env.editor)
+                });
+                var name = session.name.match(/[^\/]+$/);
+                localStorage.setItem(
+                    "saved_file:" + name,
+                    session.getValue()
+                );
+                env.editor.cmdLine.setValue("Saved " + name);
+            }
         });
-        s2.on('changeScrollTop', function (pos) {
-            s1.setScrollTop(pos)
+
+        commands.addCommand({
+            name: "load",
+            bindKey: {win: "Ctrl-O", mac: "Command-O"},
+            exec: function (arg) {
+                var session = env.editor.session;
+                var name = session.name.match(/[^\/]+$/);
+                var value = localStorage.getItem("saved_file:" + name);
+                if (typeof value == "string") {
+                    session.setValue(value);
+                    env.editor.cmdLine.setValue("loaded " + name);
+                } else {
+                    env.editor.cmdLine.setValue("no previuos value saved for " + name);
+                }
+            }
         });
-        s1.on('changeScrollLeft', function (pos) {
-            s2.setScrollLeft(pos)
+
+        var keybindings = {
+            ace: null, // Null = use "default" keymapping
+            vim: require("ace/keyboard/vim").handler,
+            emacs: "ace/keyboard/emacs",
+            // This is a way to define simple keyboard remappings
+            custom: new HashHandler({
+                "gotoright": "Tab",
+                "indent": "]",
+                "outdent": "[",
+                "gotolinestart": "^",
+                "gotolineend": "$"
+            })
+        };
+
+
+        /*********** manage layout ***************************/
+        /*  var consoleHeight = 20;
+
+         function onResize() {
+         var left = env.split.$container.offsetLeft;
+         var width = document.documentElement.clientWidth - left;
+         container.style.width = width + "px";
+         container.style.height = document.documentElement.clientHeight - consoleHeight + "px";
+         env.split.resize();
+
+         consoleEl.style.width = width + "px";
+         cmdLine.resize();
+         }
+
+         window.onresize = onResize;
+         onResize();*/
+
+
+        doclist.history = doclist.docs.map(function (doc) {
+            return doc.name;
         });
-        s2.on('changeScrollLeft', function (pos) {
-            s1.setScrollLeft(pos)
+        doclist.history.index = 0;
+        doclist.cycleOpen = function (editor, dir) {
+            var h = this.history;
+            h.index += dir;
+            if (h.index >= h.length)
+                h.index = 0;
+            else if (h.index <= 0)
+                h.index = h.length - 1;
+            var s = h[h.index];
+            docEl.value = s;
+            docEl.onchange();
+        };
+        doclist.addToHistory = function (name) {
+            var h = this.history;
+            var i = h.indexOf(name);
+            if (i != h.index) {
+                if (i != -1)
+                    h.splice(i, 1);
+                h.index = h.push(name);
+            }
+        };
+
+        themelist.themes.forEach(function (x) {
+            x.value = x.theme
         });
-    }
 
-    bindCheckbox("highlight_token", function (checked) {
-        var editor = env.editor;
-        if (editor.tokenTooltip && !checked) {
-            editor.tokenTooltip.destroy();
-            delete editor.tokenTooltip;
-        } else if (checked) {
-            editor.tokenTooltip = new TokenTooltip(editor);
-        }
-    });
+        var StatusBar = require("ace/ext/statusbar").StatusBar;
+        new StatusBar(env.editor, cmdLine.container);
 
 
-    var StatusBar = require("ace/ext/statusbar").StatusBar;
-    new StatusBar(env.editor, cmdLine.container);
-
-
-    var Emmet = require("ace/ext/emmet");
-    net.loadScript("https://nightwing.github.io/emmet-core/emmet.js", function () {
-        Emmet.setCore(window.emmet);
-        env.editor.setOption("enableEmmet", true);
-    });
+        var Emmet = require("ace/ext/emmet");
+        net.loadScript("https://nightwing.github.io/emmet-core/emmet.js", function () {
+            Emmet.setCore(window.emmet);
+            env.editor.setOption("enableEmmet", true);
+        });
 
 
 // require("ace/placeholder").PlaceHolder;
 
-    var snippetManager = require("ace/snippets").snippetManager;
+        var snippetManager = require("ace/snippets").snippetManager;
 
-    env.editSnippets = function () {
-        var sp = env.split;
-        if (sp.getSplits() == 2) {
-            sp.setSplits(1);
-            return;
-        }
-        sp.setSplits(1);
-        sp.setSplits(2);
-        sp.setOrientation(sp.BESIDE);
-        var editor = sp.$editors[1];
-        var id = sp.$editors[0].session.$mode.$id || "";
-        var m = snippetManager.files[id];
-        if (!doclist["snippets/" + id]) {
-            var text = m.snippetText;
-            var s = doclist.initDoc(text, "", {});
-            s.setMode("ace/mode/snippets");
-            doclist["snippets/" + id] = s;
-        }
-        editor.on("blur", function () {
-            m.snippetText = editor.getValue();
-            snippetManager.unregister(m.snippets);
-            m.snippets = snippetManager.parseSnippetFile(m.snippetText, m.scope);
-            snippetManager.register(m.snippets);
-        });
-        sp.$editors[0].once("changeMode", function () {
-            sp.setSplits(1);
-        });
-        editor.setSession(doclist["snippets/" + id], 1);
-        editor.focus();
-    };
-
-    require("ace/ext/language_tools");
-    env.editor.setOptions({
-        enableBasicAutocompletion: true,
-        enableLiveAutocompletion: true,
-        enableSnippets: true
-    });
-
-    var beautify = require("ace/ext/beautify");
-    env.editor.commands.addCommands(beautify.commands);
-
-});
-var loadFile = function(filepath) {
-
-}
-var saveFile = function(filepath, name) {
-
-}
-var addTab = function (name, filepath) {
-    w2ui.layout.get('main').tabs.tabs.push({
-        "id": "tab-"+name,
-        "text": name,
-        "closable": true,
-        "hint": filepath,
-        "onClick" : function(){loadFile(filepath)},
-        "onRefresh": function(){loadFile(filepath)},
-        "onClose": function(){saveFile(filepath,name)},
-        "caption": name
-    })
-    w2ui.layout.refresh()
-};
-window.addTab = addTab
-$(function () {
-
-    //TODO Uncomment $("#popup1").w2popup();
-
-    var pstyle = 'border: 1px solid #585858; padding: 0px; margin: 2px';
-    $('#layout').w2layout({
-        name: 'layout',
-        panels: [
-            {type: 'top', size: 20, resizable: false, style: pstyle, content: 'top'},
-            {type: 'left', size: 200, resizable: true, style: pstyle, content: 'left'},
-            {
-                type: 'main', style: pstyle, content: 'main',
-                tabs: {
-                    active: 'tab1',
-                    tabs: [
-                        {id: 'tab1', caption: 'Tab 1', closable: true},
-                        {id: 'tab2', caption: 'Tab 2', closable: true},
-                        {id: 'tab3', caption: 'Tab 3', closable: true},
-                    ],
-                    onClick: function (event) {
-                        //this.owner.content('main', event);
-                    },
-                    onClose: function (e){
-                        if(w2ui['layout_main_tabs'].active == e.target) {
-                            env.editor.session.setDocument(new AceDocument(""))
-                        }
-                        console.log(e)
-                    }
-                }
-            },
-            {type: "bottom", size: 200, resizable: true, style: pstyle, content: "Terminal", tabs: {
-                active: 'tab1',
-                tabs: [
-                    {id: 'terminal', caption: 'Terminal', closable: true},
-                ],
-                onClick: function (event) {
-                    console.log(this)
-                    //this.owner.content('main', event);
-                }
-            }}
-        ]
-    });
-    $().w2layout({
-        name: "editorLayout",
-        panels: [
-            {type: 'main', resizable: true, style: pstyle, content: 'main'},
-            {type: 'right', resizable: true, style: pstyle, content: 'right'}],
-        onResize: function(event) {
-            //console.log("resizing");
-            setInterval( function(){try { env.split.resize() } catch(e) {}}, 0)
-            setInterval( function(){try { env.split2.resize() } catch(e) {}}, 0)
-        }
-
-    });
-    w2ui['layout'].content('main', w2ui["editorLayout"]);
-    w2ui['layout'].content('left', "<div id='dir-tree'></div>");
-    w2ui['editorLayout'].content('main', "<div class='editor-container' id='editor-container'></div>")
-    w2ui['editorLayout'].content('right', "<div  class='editor-container' id='editor-secondary-container'></div>")
-    w2ui['layout'].content('bottom', "<div class='terminal-container'></div>")
-
-    var prompt;
-    var tabWasLast = 0;
-    var lastInput = "";
-    var lastSent = ""
-    window.terminal = $(".terminal-container").terminal(function(command, term) {
-        enterCommand(command)
-        lastInput = ""
-    }, {
-        greetings: 'Javascript Interpreter',
-        name: 'js_demo',
-        color: "white",
-        background: "blue",
-        prompt: ""/*function(cb){
-            prompt = cb;
-        }*/,
-        exit: false,
-        completion: false,
-        onExit: function(){
-            console.log("yo")
-
-        },
-        keydown: function(e) {
-            //is focused
-            if ($(".cursor").hasClass("blink")) {
-                if(e.ctrlKey){
-                    if(e.keyCode == "D".charCodeAt(0)){
-                        enterCommand("\04")
-                    }
-                    if(e.keyCode == "C".charCodeAt(0)){
-                        enterCommand("\03")
-                    }
-                    return false
-                }
-                //tab
-                if(e.keyCode == 9){
-                    enterTab();
-                    return false
-                }
-                if(e.keyCode == 8){
-                    lastInput = lastInput.substring(0, lastInput.length-1)
-                    socket.emit("data", "\b")
-                }
+        env.editSnippets = function () {
+            var sp = env.split;
+            if (sp.getSplits() == 2) {
+                sp.setSplits(1);
+                return;
             }
-    }
-    });
-    var RESULT_BUFFER_PERIOD = 100;
-    var  cmdInput = $(".cmd span:eq(1)")
-    var socket = io("http://" + window.location.host)
-
-    var bufferEE = function(emiter, event ,onListener, period, after){
-        emiter.on(event, onListener);
-
-        var flush = function(){
-            emiter.removeListener(event, onListener);
-            after()
+            sp.setSplits(1);
+            sp.setSplits(2);
+            sp.setOrientation(sp.BESIDE);
+            var editor = sp.$editors[1];
+            var id = sp.$editors[0].session.$mode.$id || "";
+            var m = snippetManager.files[id];
+            if (!doclist["snippets/" + id]) {
+                var text = m.snippetText;
+                var s = doclist.initDoc(text, "", {});
+                s.setMode("ace/mode/snippets");
+                doclist["snippets/" + id] = s;
+            }
+            editor.on("blur", function () {
+                m.snippetText = editor.getValue();
+                snippetManager.unregister(m.snippets);
+                m.snippets = snippetManager.parseSnippetFile(m.snippetText, m.scope);
+                snippetManager.register(m.snippets);
+            });
+            sp.$editors[0].once("changeMode", function () {
+                sp.setSplits(1);
+            });
+            editor.setSession(doclist["snippets/" + id], 1);
+            editor.focus();
         };
-        setTimeout(flush , period);
 
-        return {
-            flush : function(){
-                clearTimeout(flush(), period)
-                flush()
-            }
+        require("ace/ext/language_tools");
+        env.editor.setOptions({
+            enableBasicAutocompletion: true,
+            enableLiveAutocompletion: true,
+            enableSnippets: true
+        });
+
+        var beautify = require("ace/ext/beautify");
+        env.editor.commands.addCommands(beautify.commands);
+    }
+
+    var lastProjects = window.localStorage.getItem("lastProjects")
+    lastProjects = lastProjects || "";
+
+    $('#popup1').w2popup({modal : true}); // content taken from inner html of #id
+    $('#w2ui-popup #lastProjects').html(
+        lastProjects.split(",").map(function(path){
+            return "<li onclick='setPath(this.innerText)'><a href='#'>" + path + "</a></li>"
+        }).join("")
+    );
+    window.setPath = function(name){
+        $('#w2ui-popup #projectInput').val(name)
+        startProject(name);
+
+    }
+    window.startProject = function(path) {
+        var lastProjects = window.localStorage.getItem("lastProjects")
+        if(!lastProjects || !~lastProjects.indexOf(path))lastProjects = (lastProjects || "") + path + ",";
+        if(lastProjects.slice(",").length > 6) lastProjects = lastProjects.replace(/^\w*/,"")
+        window.localStorage.setItem("lastProjects", lastProjects)
+
+        w2popup.close();
+        path[path.length-1] != "/" ? path += "/" : 0;
+        var cake = path.split("/")
+        window.project = {
+            path: path,
+            name: cake[cake.length-1]
         }
-    };
-    function enterCommand(command){
-        terminal.pause();
-        var acc = "";
-        socket.emit("data", command.replace(lastInput, '') +"\n")
-        bufferEE(socket, "data", function(data){
-            acc += data
-        }, 1000, function(){
-            acc = acc.replace(command, "");
-            acc = acc.replace(command, "");
-            acc = acc.replace("\n", "");
-            lastInput = ""
-            displayLines(acc);
-        })
-    }
-    function enterTab(){
-        var toSend = cmdInput.text();
-        toSend = toSend.replace(lastInput, "");
-        socket.emit("data", toSend + "\t");
-        lastSent = toSend
-        var acc = "";
+        require("./../../erlhickey/ui").init(function(){
+            require("./../../erlhickey/dirtree").init();
+            require("./../../erlhickey/terminal").init();
 
-        bufferEE(socket, "data", function(data){
-                acc+= data
-            }
-        , RESULT_BUFFER_PERIOD , function(){
-            var cake = acc.split("\n")
-
-            if(cake.length == 1){
-                var line = cake.join();
-                line.replace(lastSent, "");
-                lastInput += line;
-                terminal.set_command(lastInput);
-                return
-            }
-            displayLines(acc)
-        })
-    }
-    function displayLines(input){
-        var cake = input.split("\n")
-        console.log(cake)
-
-        var lastLine = cake[cake.length-1];
-        var lastLineCake = lastLine.trim().split(" ");
-
-        cake.slice(0,cake.length-1).map(terminal.echo)
-        terminal.set_prompt(lastLineCake[0] + " ")
-        terminal.set_command(lastLineCake.slice(1).join())
-        lastInput = lastLineCake.slice(1).join()
-
-        terminal.resume();
+            exports.init()
+        });
 
     }
-
-    window.socket = socket
-
-    // Dir tree
-
-    $('#dir-tree').jstree({ 'core' : {
-        'themes': {
-            'name': 'proton',
-            'responsive': true
-        },
-        'data' : [
-            { "id" : "ajson1", "parent" : "#", "text" : "Simple root node" },
-            { "id" : "ajson2", "parent" : "#", "text" : "Root node 2" },
-            { "id" : "ajson3", "parent" : "ajson2", "text" : "Child 1" },
-            { "id" : "ajson4", "parent" : "ajson2", "text" : "Child 2" },
-            { "id" : "ajson5", "parent" : "ajson1", "text" : "Child 2" },
-        ],
-        "check_callback" : true
-    },
-        "plugins" : [
-            "contextmenu", "dnd", "search",
-            "state", "types", "wholerow"
-        ]});
 });
 

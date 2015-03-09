@@ -8,7 +8,7 @@ var http = require("http")
   , fs = require("fs"),
     EventEmitter =  require("events").EventEmitter
   , port = process.env.PORT || 8888
-  , ip = process.env.IP || "0.0.0.0";
+  , ip = "localhost";
 
 
 // compatibility with node 0.6
@@ -18,7 +18,8 @@ if (!fs.exists)
 var allowSave = process.argv.indexOf("--allow-save") != -1;
 
 var server = new EventEmitter();
-module.exports = exports = server;
+module.exports = server;
+exports = server;
 server.setMaxListeners(1);
 
 //Launch plugins
@@ -30,9 +31,10 @@ httpServer.listen(port, ip);
 
 function receiveClient(req, res) {
     var uri = url.parse(req.url).pathname
-      , filename = path.join(process.cwd(), uri);
+      , filename = uri;
 
-    if(exports.emit(uri, req, res)){
+    console.log(uri)
+    if(exports.emit(uri, req, res, url.parse(req.url, true).query)){
         return
     }
 
@@ -41,11 +43,10 @@ function receiveClient(req, res) {
     }
 
     if (req.method == "PUT") {
-        if (!allowSave)
-            return error(res, 404, "Saving not allowed pass --allow-save to enable");
         save(req, res, filename);
     }
 
+    filename = process.cwd() + filename
     fs.exists(filename, function(exists) {
         if (!exists)
             return error(res, 404, "404 Not Found\n");

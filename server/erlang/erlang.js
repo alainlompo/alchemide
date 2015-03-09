@@ -71,7 +71,7 @@ server.on("/erl/dialyze", function(req, res){
     term.on("error", function(e){throw e})
 
     eliCompServer.awaitCompletion =function(a,b,c){ awaitCompletion(a,b,c,term, true)}
-    eliCompServer.compile = function(a,b) { compileModule(a,b, term)};
+    eliCompServer.compile = function(a,b) { compileModule(a,b, term, true)};
     eliCompServer.dialyze = dialyzeModule;
 })();
 
@@ -108,22 +108,27 @@ function awaitCompletion(word, callback, acc, term, isElixir) {
 
 }
 function prepareResult(res, isOneLiner, isElixir) {
-    var cake = res.match(/\S+/g)
-    if(isElixir){
-        if(isOneLiner){
-            return [cake.join("").substr(1)]
+
+    try {
+        var cake = res.match(/\S+/g);
+        if (isElixir) {
+            if (isOneLiner) {
+                return [cake.join("").substr(1)]
+            }
+            return cake.slice(1, cake.length - 2)
+        } else {
+            if (isOneLiner) {
+                return [cake.join("").substr(1).replace("\u0007", "")]
+            }
+            return cake.slice(2, cake.length - 2)
         }
-        return cake.slice(1,cake.length-2)
-    } else {
-        if(isOneLiner){
-            return [cake.join("").substr(1).replace("\u0007", "")]
-        }
-        return cake.slice(2, cake.length-2)
+    } catch (e) {
+        return []
     }
 }
 
-function compileModule(name, cb, term){
-    term.write("c('" + name + "').\n");
+function compileModule(name, cb, term, isElixir){
+    term.write("c(\"" + name + "\")" + (isElixir ? "\n" : ".\n"));
     var lines = [];
     var listenForData = function() {
         term.once("data", function (data) {
@@ -146,6 +151,7 @@ function compileModule(name, cb, term){
     listenForData()
 }
 function recognizeCompilerLine(line){
+    console.log("line: " + line)
     //if tuple result
     if(!line.length) return undefined;
     line = line.trim();
@@ -160,7 +166,7 @@ function recognizeCompilerLine(line){
     {
         var cake = line.split(":");
         return {
-            type: / error /.test(line) ? "error" : "info" ,
+            type: / error /.test(line) ? "error" : "warning" ,
             path: cake[0],
             line: cake[1],
             content: cake.slice(2).join(":")
