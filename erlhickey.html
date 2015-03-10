@@ -30,10 +30,11 @@
 
 
     <div id="side-page">
-        <div id="file-search"><label>
-            <input placeholder="Find" />
-        </label>
+        <div id="top-bar">
+            <div id="close" class="fa fa-circle"></div>
+            <input id="findFile" placeholder="Find" />
         </div>
+        <div class="separator"></div>
         <div id="dir-tree-cont"><div id="dir-tree"></div></div>
     </div>
     <div id="layout" style="height: 100%; overflow:hidden;"></div>
@@ -74,5 +75,8 @@ h
         <button class="btn" onclick="window.startProject($('#w2ui-popup #projectInput').val());">Continue</button>
     </div>
 </div>
+<div id="definition-tip"><pre><code></code>
+
+</pre></div>
 </body>
 </html>

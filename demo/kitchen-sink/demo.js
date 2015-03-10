@@ -56,6 +56,7 @@ define(function (require, exports, module) {
     var HashHandler = require("ace/keyboard/hash_handler").HashHandler;
 
     var Renderer = require("ace/virtual_renderer").VirtualRenderer;
+    var EditSession = require("ace/edit_session").EditSession;
     var Editor = require("ace/editor").Editor;
     window.AceDocument = require("ace/document").Document;
 
@@ -335,6 +336,7 @@ border:1px solid #baf; z-index:100";
         var StatusBar = require("ace/ext/statusbar").StatusBar;
         new StatusBar(env.editor, cmdLine.container);
 
+        alert(window.location)
 
         var Emmet = require("ace/ext/emmet");
         net.loadScript("https://nightwing.github.io/emmet-core/emmet.js", function () {
@@ -421,8 +423,20 @@ border:1px solid #baf; z-index:100";
             require("./../../erlhickey/terminal").init();
 
             exports.init()
+            env.editor.on("change", function(e){
+                console.log("Change ")
+                console.log(e.data.range);
+                var p = [e.data.range.end.row, e.data.range.end.column]
+                var pos =env.editor.renderer.textToScreenCoordinates(p[0],p[1])
+                $("#definition-tip").css("left", pos.pageX + 275)
+                $("#definition-tip").css("top", pos.pageY + 15)
+            })
         });
 
     }
+
+
+    window.tooltip = new Editor(new Renderer($("#definition-tip").get()[0]), new EditSession("asdkjjasdokajsd\nasddsf"))
+    tooltip.setReadOnly(true);
 });
 

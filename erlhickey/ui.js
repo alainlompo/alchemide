@@ -10,15 +10,15 @@ define(function(require, exports, module) {
             panels: [
                 {
                     type: 'top',
-                    size: 40,
+                    size: 52,
                     resizable: false,
                     style: pstyle,
-                    content: '<div id="menuBt" class="fa fa-bars fa-2x"></div><div id="filePath"></div>'
+                    content: '<div id="drag-bar"><span class="fa fa-file-code-o fa-2x"></span><span id="filePath"></span><div class="separator></div></div>"'
                 },
                 {
                     type: 'main', style: pstyle, content: 'main',
                     tabs: {
-                        active: 'tab1',
+                        active: 'newfile',
                         tabs: [
                             {id: 'newfile', caption: 'New file...', closable: true}
                         ],
@@ -50,8 +50,8 @@ define(function(require, exports, module) {
         $().w2layout({
             name: "editorLayout",
             panels: [
-                {type: 'main', resizable: true, style: pstyle, content: "<div class='editor-container' id='editor-container'></div>"},
-                {type: 'right', resizable: true, style: pstyle, content: "<div  class='editor-container' id='editor-secondary-container'></div>"}],
+                {type: 'main', size: 100, resizable: true, style: pstyle, content: "<div class='editor-container' id='editor-container'></div>"},
+                {type: 'right', size: 400 ,resizable: true, style: pstyle, content: "<div  class='editor-container' id='editor-secondary-container'></div>"}],
             onResize: function (event) {
                 //console.log("resizing");
                 setTimeout(function () {
