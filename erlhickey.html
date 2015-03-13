@@ -31,7 +31,7 @@
 
     <div id="side-page">
         <div id="top-bar">
-            <div id="close" class="fa fa-circle"></div>
+            <div class="circle"> <div class="inner-circle"></div></div>
             <input id="findFile" placeholder="Find" />
         </div>
         <div class="separator"></div>
@@ -67,12 +67,38 @@
             <a href=https://github.com/iraasta/erlhickey/issues target="_blank"> Github Issue Page</a>
         </div>
         <ul id="lastProjects">
-h
         </ul>
-        <input class="w2ui-field" id="projectInput" placeholder="Project directory" type="text" value="/" />
+        <input class="w2ui-field" id="projectInput" placeholder="Project directory" type="text" value="" />
     </div>
     <div rel="buttons">
+        <input id="erlPath" placeholder="Path to erlang/lib directory (optional)" style="width: 40%">
         <button class="btn" onclick="window.startProject($('#w2ui-popup #projectInput').val());">Continue</button>
+        <input id="elixirPath" placeholder="Path to elixir/lib directory (optional)" style="width: 40%">
+
+    </div>
+</div>
+<div id="loadPopup" style="display: none; width: 250px; height: 100px; overflow: auto">
+    <div rel="title">
+        <input class="w2ui-field" id="loadNameInput" placeholder="" type="text" value=""> </div>
+    <div rel="body">
+        <div style="padding: 10px; font-size: 15px; line-height: 150%;">
+            <select></select>
+
+        </div>
+
+    </div>
+</div>
+<div id="savePopup" style="display: none; width: 650px; height: 400px; overflow: auto">
+    <div rel="title">
+        Save File As
+    </div>
+    <div rel="body">
+        <div style="padding: 10px; font-size: 15px; line-height: 150%;">
+            <div id="dir-tree-browser"></div>
+        </div>
+        <input class="w2ui-field" id="savePath" placeholder="" type="text" value="" />
+    </div>
+    <div rel="buttons">
     </div>
 </div>
 <div id="definition-tip"><pre><code></code>

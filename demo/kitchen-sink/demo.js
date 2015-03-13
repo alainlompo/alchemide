@@ -50,7 +50,7 @@ define(function (require, exports, module) {
     var useragent = require("ace/lib/useragent");
 
     var event = require("ace/lib/event");
-    var theme = require("ace/theme/textmate");
+    var theme = require("ace/theme/tomorrow");
     var UndoManager = require("ace/undomanager").UndoManager;
 
     var HashHandler = require("ace/keyboard/hash_handler").HashHandler;
@@ -63,6 +63,7 @@ define(function (require, exports, module) {
 
     var whitespace = require("ace/ext/whitespace");
     var erlhickey = require("../../erlhickey/main");
+    var utils = require("../../erlhickey/utils");
 
     window.doclist = require("./doclist");
     var modelist = require("ace/ext/modelist");
@@ -212,7 +213,28 @@ border:1px solid #baf; z-index:100";
             exec: function (editor) {
                 editor.setFontSize(12);
             }
-        }]);
+        }, {
+            name: "goBackInHistory",
+            bindKey: "Ctrl-Alt-O",
+            exec: function (editor) {
+                console.log("Back")
+            }
+        } , {
+            name: "goForwardInHistory",
+            bindKey: "Ctrl+Alt+P",
+            exec: function (editor) {
+               console.log("Forward")
+            }
+        } , {
+            name: "fastOpen",
+            bindKey: "Ctrl-O",
+            exec: function (editor) {
+                console.log("yo");
+                $("#loadPopup").w2popup();
+                $("#w2ui-popup #loadNameInput").focus()
+            }
+        }
+        ]);
 
 
         env.editor.commands.addCommands(whitespace.commands);
@@ -240,11 +262,15 @@ border:1px solid #baf; z-index:100";
             bindKey: {win: "Ctrl-S", mac: "Command-S"},
             exec: function (arg) {
                 var session = env.editor.session;
-                $.ajax(project.path + session.name,{
+                if(!session.name){
+                    //TODO save as new
+                }
+                $.ajax(project.address + project.path + session.name,{
                     method: "PUT",
                     data: session.getDocument().getValue()
                 }).done(function(){
                     erlhickey.save(env.editor)
+                    ui.showSaved();
                 });
                 var name = session.name.match(/[^\/]+$/);
                 localStorage.setItem(
@@ -255,21 +281,6 @@ border:1px solid #baf; z-index:100";
             }
         });
 
-        commands.addCommand({
-            name: "load",
-            bindKey: {win: "Ctrl-O", mac: "Command-O"},
-            exec: function (arg) {
-                var session = env.editor.session;
-                var name = session.name.match(/[^\/]+$/);
-                var value = localStorage.getItem("saved_file:" + name);
-                if (typeof value == "string") {
-                    session.setValue(value);
-                    env.editor.cmdLine.setValue("loaded " + name);
-                } else {
-                    env.editor.cmdLine.setValue("no previuos value saved for " + name);
-                }
-            }
-        });
 
         var keybindings = {
             ace: null, // Null = use "default" keymapping
@@ -336,7 +347,6 @@ border:1px solid #baf; z-index:100";
         var StatusBar = require("ace/ext/statusbar").StatusBar;
         new StatusBar(env.editor, cmdLine.container);
 
-        alert(window.location)
 
         var Emmet = require("ace/ext/emmet");
         net.loadScript("https://nightwing.github.io/emmet-core/emmet.js", function () {
@@ -353,6 +363,7 @@ border:1px solid #baf; z-index:100";
             var sp = env.split;
             if (sp.getSplits() == 2) {
                 sp.setSplits(1);
+
                 return;
             }
             sp.setSplits(1);
@@ -395,6 +406,8 @@ border:1px solid #baf; z-index:100";
     lastProjects = lastProjects || "";
 
     $('#popup1').w2popup({modal : true}); // content taken from inner html of #id
+    $('#w2ui-popup #erlPath').val   (window.localStorage.getItem("erlPath")     || "");
+    $('#w2ui-popup #elixirPath').val(window.localStorage.getItem("elixirPath")  || "");
     $('#w2ui-popup #lastProjects').html(
         lastProjects.split(",").map(function(path){
             return "<li onclick='setPath(this.innerText)'><a href='#'>" + path + "</a></li>"
@@ -406,37 +419,61 @@ border:1px solid #baf; z-index:100";
 
     }
     window.startProject = function(path) {
+        var erlPath = $('#w2ui-popup #erlPath').val();
+        var elixirPath = $('#w2ui-popup #elixirPath').val();
         var lastProjects = window.localStorage.getItem("lastProjects")
         if(!lastProjects || !~lastProjects.indexOf(path))lastProjects = (lastProjects || "") + path + ",";
         if(lastProjects.slice(",").length > 6) lastProjects = lastProjects.replace(/^\w*/,"")
-        window.localStorage.setItem("lastProjects", lastProjects)
+        window.localStorage.setItem("lastProjects",     lastProjects);
+        window.localStorage.setItem("erlPath",          erlPath);
+        window.localStorage.setItem("elixirPath",       elixirPath);
 
         w2popup.close();
         path[path.length-1] != "/" ? path += "/" : 0;
         var cake = path.split("/")
         window.project = {
             path: path,
-            name: cake[cake.length-1]
+            name: cake[cake.length-1],
+            address: "http://localhost:8888/",
+            local: true,
+            isElixir: function(){return erlhickey.isElixir(env.editor.session.getMode())},
+            erlPath : erlPath,
+            elixirPath : elixirPath
         }
-        require("./../../erlhickey/ui").init(function(){
+        window.ui = require("./../../erlhickey/ui")
+        ui.init(function(){
             require("./../../erlhickey/dirtree").init();
             require("./../../erlhickey/terminal").init();
 
-            exports.init()
-            env.editor.on("change", function(e){
-                console.log("Change ")
-                console.log(e.data.range);
-                var p = [e.data.range.end.row, e.data.range.end.column]
-                var pos =env.editor.renderer.textToScreenCoordinates(p[0],p[1])
-                $("#definition-tip").css("left", pos.pageX + 275)
-                $("#definition-tip").css("top", pos.pageY + 15)
+            exports.init();
+
+            var context = require("./../../erlhickey/textual_context");
+            var tooltip = require("./../../erlhickey/tooltip");
+            //TODO var dirTreeBroswer = require("./../../erlhickey/dirtree_browser")
+
+            tooltip.init("#definition-tip");
+
+            context.init(env.editor, ":");
+            context.on("contextSwitch", function(context){
+                tooltip.handleContext(context, project)
+            })
+            env.editor.on("change", function(){
+                ui.showUnsaved()
+            })
+
+            $("#w2ui-popup #loadNameInput").change(function(){
+                utils.load("findFile?&name=" + $("#w2ui-popup #loadNameInput").val(), function(res){
+                    var files = JSON.stringify(res.response)[result]
+
+                })
             })
         });
+
+
+
 
     }
 
 
-    window.tooltip = new Editor(new Renderer($("#definition-tip").get()[0]), new EditSession("asdkjjasdokajsd\nasddsf"))
-    tooltip.setReadOnly(true);
 });
 

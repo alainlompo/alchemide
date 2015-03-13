@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
     exports.load = function(url, callback, errCallback) {
+        if(!~url.indexOf(project.address)) url = project.address + url;
         var xhr;
         if (typeof XMLHttpRequest !== 'undefined') xhr = new XMLHttpRequest();
         else {
@@ -32,5 +33,13 @@ define(function(require, exports, module) {
 
         xhr.open('GET', url, true);
         xhr.send('');
+    }
+    exports.findDefinition = function(dirs, filename, name, callback) {
+        var prefix = project.isElixir() ? "elixir" : "erl";
+        exports.load(prefix+"/definition?dirs="+dirs +
+        "&file="+filename +
+        "&name="+name, function(res){
+            callback(res.response)
+        })
     }
 })

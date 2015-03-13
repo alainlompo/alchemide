@@ -30,15 +30,15 @@
         "title": "ErlHickey", 
         "always-on-top": false, 
         "frame": false, 
-        "visible": true, 
-        "height": 480, 
+        "transparent": true, 
+        "height": 600, 
         "exe_icon": "", 
-        "width": 640, 
+        "visible": true, 
         "as_desktop": false, 
-        "position": "", 
+        "position": "center", 
         "show_in_taskbar": false, 
         "mac_icon": "", 
-        "transparent": true, 
+        "width": 800, 
         "toolbar": false, 
         "icon": ""
     }, 
@@ -55,11 +55,11 @@
         "mac-x32": false, 
         "windows-x32": false, 
         "mac-x64": false, 
-        "nw_version": "0.11.6", 
+        "nw_version": "0.10.5", 
         "force_download": false, 
         "linux-x64": true
     }, 
-    "description": "Ajax.org Code Editor is a full featured source code highlighting editor that powers the Cloud9 IDE", 
+    "description": "", 
     "repository": {
         "url": "http://github.com/ajaxorg/ace.git", 
         "type": "git"
@@ -81,11 +81,11 @@
         "java": false, 
         "plugin": false
     }, 
-    "name": "ace", 
+    "name": "ErlHickey", 
     "directories": {
         "lib": "lib/ace"
     }, 
     "single-instance": true, 
     "snapshot": "", 
-    "node-main": ""
+    "node-main": "server/static.js"
 }

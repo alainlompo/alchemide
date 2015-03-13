@@ -68,8 +68,8 @@ body {
     border-radius: 0px !important;
 }
 .w2ui-tab.active {
-    border: 0px #585858 solid !important;
-    background: #444855 !important;
+    border-bottom: 0px #2D2928 solid !important;
+    background: #4488F7 !important;
     border-radius: 0px !important;
 }
 
@@ -163,21 +163,16 @@ body {
 }
 
 .jstree-proton .jstree-clicked {
-    background-color: rgba(165, 165, 165, 0.30) !important;
+    border-bottom: 0px #2D2928 solid !important;
+    background: #aa4488F7 !important;
     width: 100% !important;
 }
 
-.jstree-hovered {
-    background-color: rgba(165, 165, 165, 0.10) !important;
-    border: none !important;
-    border-radius: 0% !important;
-    width: 100% !important;
-
-}
 
 #filePath {
     width: 100%;
     margin-left: 20px;
+    font-weight: bold;
 }
 
 #menuBt {
@@ -193,11 +188,11 @@ body {
 #definition-tip{
     display: none;
     position: absolute;
-    top: 20px;
-    left: 20px;
-    width: 200px;
-    height: 100px;
-
+    bottom: 150px;
+    right: 400px;
+    width: 400px;
+    height: 150px;
+    border: 1px grey solid;
     overflow: hidden;
     z-index: 10001;
 }
@@ -216,11 +211,23 @@ body {
     margin-left: 20px;
     width: 40%;
 }
-#close {
+.circle {
+    border-radius: 50%;
+    width: 13px;
+    height: 13px;
     margin-left: 10px;
-    color: #b80000;
-    padding: 6px;
+    margin-top: 5px;
+    background: linear-gradient(#E3878F,#D2474E);
+    box-shadow: 0px 4px 5px 0px rgba(0, 0, 0, 0.6);
     float: left;
+}
+.inner-circle {
+    border-radius: 50%;
+    width: 40%;
+    height: 40%;
+    margin-top: 30%;
+    margin-left: 30%;
+    background: linear-gradient(#2C1416,#823939);
 }
 #drag-bar {
     padding-top: 10px;
@@ -233,4 +240,10 @@ body {
     overflow: hidden;
     -webkit-app-region: drag;
     color: #000000;
+}
+.terminal .cmd {
+    background-color: #131518 !important;
+}
+.w2ui-popup {
+    border-radius: 0 !important;
 }

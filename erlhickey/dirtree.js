@@ -15,7 +15,7 @@ define(function(require, exports, module) {
                 },
                 'data': {
                     "url": function (node) {
-                        return "files"
+                        return project.address + "files"
                     },
                     "data": function (node) {
                         console.log(this.get_path(node));
@@ -38,7 +38,7 @@ define(function(require, exports, module) {
             },
             "plugins": [
                 "contextmenu", "dnd", "search",
-                "state", "types"
+                "state", "types","wholerow"
             ]
         });
         jstree.bind("select_node.jstree", function (_, a) {

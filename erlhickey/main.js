@@ -69,7 +69,7 @@ define(function(require, exports, module) {
         if(/^\w+(\.|:)\w*/.test(lastWord)){
             word = lastWord
         }
-        utils.load(word ? "/"+target+"/complete?word="+word: "/"+target+"/complete", function(res){
+        utils.load(word ? target+"/complete?word="+word: "/"+target+"/complete", function(res){
             var words = JSON.parse(res.response)["result"];
             var localWords = wordList.map(function(word) {
                 return {
@@ -100,7 +100,7 @@ define(function(require, exports, module) {
                     meta: "local"
                 };
             });
-            callback(localWords)
+            callback(null, localWords)
         })
 
     }

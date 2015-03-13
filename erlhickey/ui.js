@@ -13,21 +13,21 @@ define(function(require, exports, module) {
                     size: 52,
                     resizable: false,
                     style: pstyle,
-                    content: '<div id="drag-bar"><span class="fa fa-file-code-o fa-2x"></span><span id="filePath"></span><div class="separator></div></div>"'
+                    content: '<div id="drag-bar"><span class="fa fa-file-code-o fa-2x"  style="font-size:1.3em; margin-top: 5px"></span><span id="filePath"></span><div class="separator></div></div>"'
                 },
                 {
                     type: 'main', style: pstyle, content: 'main',
                     tabs: {
                         active: 'newfile',
                         tabs: [
-                            {id: 'newfile', caption: 'New file...', closable: true}
+                            {id: 'newfile', caption: 'New file...', closable: false }
                         ],
                         onClick: function (event) {
                             env.editor.setSession(new EditSession("", modelist.modesByName.text))
                         },
                         onClose: function (e) {
                             if (w2ui['layout_main_tabs'].active == e.target) {
-                                env.editor.session.setDocument(new AceDocument(""))
+                                w2ui.layout_main_tabs.select("newfile")
                             }
                             console.log(e)
                         }
@@ -125,6 +125,22 @@ define(function(require, exports, module) {
         }
         exports.removeSession = function removeSession(path) {
             delete sessions[path]
+        }
+        exports.showUnsaved = function(){
+            var activeTab = w2ui.layout_main_tabs.get(w2ui.layout_main_tabs.active)
+            var activeTabName = activeTab.caption;
+            if(!/\*$/.test(activeTabName)){
+                activeTab.caption += "*";
+                w2ui.layout_main_tabs.refresh();
+            }
+        };
+        exports.showSaved = function showUnsaved(){
+            var activeTab = w2ui.layout_main_tabs.get(w2ui.layout_main_tabs.active)
+            var activeTabName = activeTab.caption;
+            if(/\*$/.test(activeTabName)){
+                activeTab.caption = activeTab.caption.substring(0,activeTab.caption.length-2);
+                w2ui.layout_main_tabs.refresh();
+            }
         }
     }
 });

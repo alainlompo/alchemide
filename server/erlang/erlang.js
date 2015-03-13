@@ -5,7 +5,9 @@ var server = require("../static");
 var url = require('url');
 var pty = require('pty.js');
 var helpers = require("./../helpers");
+//var defRegExp = //helpers.$$$();
 
+if(~process.argv.indexOf("--erlang-mode")) process.erlangMode = true;
 
 /// INITIALIZATION
 var erlCompServer = {};
@@ -46,6 +48,18 @@ server.on("/erl/dialyze", function(req, res){
         res.end(JSON.stringify(result, null, 2))
     })
 });
+
+server.on("/erl/definition", function(req, res, par){
+    var dirs = par["dirs"].replace(/'/g,"").split(",");
+    console.log(dirs);
+    console.log(par["name"]);
+    var name = par["name"];
+    var file = par["file"] || "";
+    helpers.findDefinition(dirs, file+".erl", new RegExp(name +"(.*) *->(.|\\n)*?\\.", "g"), function(result){
+        res.end(JSON.stringify(result))
+    })
+});
+
 (function(){
     var term = pty.spawn('erl', [], {
         name: 'xterm-color',
@@ -79,15 +93,12 @@ server.on("/erl/dialyze", function(req, res){
 function awaitCompletion(word, callback, acc, term, isElixir) {
     acc = acc | "";
     word = word || "";
-    console.log("word = " + word);
 
     term.write(word + "\t");
     var counter = 2;
 
     var bufferEE = helpers.bufferEE(term, "data", function(data){
         data.split("\n").map(function(line){
-            console.log("line")
-            console.log(line)
             acc += line + " "
             if(word && (new RegExp("^"+word.trim())).test(line.trim()) && !isList(line)){
                 counter--
@@ -96,7 +107,6 @@ function awaitCompletion(word, callback, acc, term, isElixir) {
                 counter--
             }
             if(!counter){
-                console.log("flushin")
                 bufferEE.flush()
             }
         })
@@ -151,7 +161,6 @@ function compileModule(name, cb, term, isElixir){
     listenForData()
 }
 function recognizeCompilerLine(line){
-    console.log("line: " + line)
     //if tuple result
     if(!line.length) return undefined;
     line = line.trim();
@@ -206,3 +215,4 @@ function recognizeDialyzerLine(line){
 function isList(w){
     return /\S+\s+\S+/.test(w)
 }
+
