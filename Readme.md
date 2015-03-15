@@ -44,3 +44,22 @@ Latest version ( 0.2.4 ) of Alchemide supports:
   stability
 
 ## FAQ
+
+##### Can I extend Alchemide to use Brainfuck language? (Or any other)
+Yes! Alchemide is fully extendible because of great job C9 did with ACE. You can add any language support,
+although ACE Editor supports a lot of them out of the box.
+You can get basicly any language highlighed in Alchemide.
+Autocompletion works in naive mode by default, but You can add intelligent completion on the server side
+with HTTP interface
+
+##### Is Alchemide production ready?
+Nope. Alchemide project started 3 March 2015 and is considered to be in early stage development.
+
+##### Can I use Alchemide on my website?
+If You'd like than of course You can. I'd appreciate a note with a link to this repository though
+
+##### How can I check what's already supported and what's not?
+I recommend taking a look at Alchemide's [official Trello page](https://trello.com/b/299ZIZkT/alchemide)
+
+##### Can I join Alchemide team?
+Of course. We're open source and we appreciate any help. Whoever You are - designer, coder, erlang/elixir passionate, a guy with great ideas - we appreciate any help of Yours.
