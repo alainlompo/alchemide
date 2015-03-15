@@ -9,9 +9,9 @@
 - [License](#license)
 
 ## About 
-Alchemide (former ErlHickey) is an open source dedicated Erlang / Elixir editor. It's developed on the top of ACE Editor
-with Node.js as a backend.
-Latest version ( 0.2.4 ) of Alchemide supports
+Alchemide (former ErlHickey) is an open source dedicated Erlang / Elixir editor.  
+It's developed on the top of ACE Editor with Node.js as a backend.  
+Latest version ( 0.2.4 ) of Alchemide supports  
     - Syntax highlighting
     - Autocompletion of Stdlib libraries ( Both Erlang and Elixir )
     - Project directory browsing
