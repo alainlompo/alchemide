@@ -1,10 +1,16 @@
 define(function(require, exports, module) {
+    var utils;
+    var Session;
+    var UndoManager;
+    var modelist;
+    var projectDir;
     exports.init = function() {
-        var projectDir = window.project.path;
-        var utils = require("./utils");
-        var Session = require("ace/edit_session").EditSession
-        var modelist = require("ace/ext/modelist")
-        var UndoManager = require("ace/undomanager").UndoManager;
+
+        projectDir = window.project.path;
+        utils = require("./utils");
+        Session = require("ace/edit_session").EditSession
+        modelist = require("ace/ext/modelist");
+        UndoManager = require("ace/undomanager").UndoManager;
         var ui = require("./ui");
 
         window.jstree = $('#dir-tree').jstree({
@@ -48,20 +54,22 @@ define(function(require, exports, module) {
             var fileName = path.substr(path.lastIndexOf("/") + 1);
 
             if (isFile) {
-                $("#filePath").text(path);
-                utils.load("file?path='" + projectDir + path + "'", function (res) {
-                    var session = new Session(res.response, modelist.getModeForPath(path))
-                    ui.addTab(fileName, path, session);
-                    console.log(modelist.getModeForPath(path))
-                    env.editor.setSession(session);
-                    env.editor.session.name = path;
-                    var mode = modelist.getModeForPath(path)
-                    env.editor.session.setUndoManager(new UndoManager())
-                    env.editor.session.setMode(modelist.modesByName[mode.name].mode || modesByName.text.mode);
-
-                });
+                exports.loadFile(fileName, path)
             }
             // Do my action
+        });
+    }
+    exports.loadFile = function(name, path){
+        $("#filePath").text(path);
+        if(!~path.indexOf(projectDir)) path = projectDir + path
+        utils.load("file?path='" + path + "'", function (res) {
+            var session = new Session(res.response, modelist.getModeForPath(path));
+            ui.addTab(name, path, session);
+            env.editor.setSession(session);
+            env.editor.session.name = path;
+            var mode = modelist.getModeForPath(path);
+            env.editor.session.setUndoManager(new UndoManager());
+            env.editor.session.setMode(modelist.modesByName[mode.name].mode || modelist.modesByName.text.mode);
         });
     }
 })

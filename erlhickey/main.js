@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
     "use strict";
 
+
     var erlhickey = exports;
     var utils = require("./utils");
     exports.compile = function(editor, isElixir) {
@@ -42,6 +43,14 @@ define(function(require, exports, module) {
         if(/(;|\.|\})/.test(line)) return true;
         return false
     };
+    exports.elixirIndentTest = function(line) {
+        if (/do\s*$/.test(line) && /,\s*do/.test(line)) return false;
+        if (/do\s*$/.test(line)) return true;
+        return false
+    }
+    exports.elixirOutdentTest = function(line){
+        return false;
+    }
     //ERL HICKEY
     exports.erlangCheckIndent  = function(line, indentf, outdentf){
         //indent rules
@@ -56,6 +65,13 @@ define(function(require, exports, module) {
         }
 
     };
+    exports.elixirCheckIndent = function(line, indentf, outdentf){
+        if(erlhickey.elixirIndentTest(line)) indentf()
+        if(erlhickey.elixirOutdentTest(line)) outdentf()
+    }
+
+
+
     exports.isErlang = function(mode){return (mode && /erlang/.test(mode.$id))}
     exports.isElixir = function(mode){return (mode && /elixir/.test(mode.$id))}
     //ERL HICKEY

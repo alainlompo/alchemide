@@ -229,9 +229,19 @@ border:1px solid #baf; z-index:100";
             name: "fastOpen",
             bindKey: "Ctrl-O",
             exec: function (editor) {
-                console.log("yo");
+                var dirtree = require("./../../erlhickey/dirtree")
                 $("#loadPopup").w2popup();
-                $("#w2ui-popup #loadNameInput").focus()
+                var input = $('#w2ui-popup input[type=combo]');
+                input.w2field('combo', { items: project.allFiles });
+                input.focus()
+
+                input.keydown(function(e){
+                    if(e.keyCode == 13){
+                        var cake = input.val().split(/(\(|\))/)
+                        dirtree.loadFile(cake[0].trim(), cake[2])
+                        w2popup.close();
+                    }
+                })
             }
         }
         ]);
@@ -431,6 +441,7 @@ border:1px solid #baf; z-index:100";
         w2popup.close();
         path[path.length-1] != "/" ? path += "/" : 0;
         var cake = path.split("/")
+
         window.project = {
             path: path,
             name: cake[cake.length-1],
@@ -438,40 +449,45 @@ border:1px solid #baf; z-index:100";
             local: true,
             isElixir: function(){return erlhickey.isElixir(env.editor.session.getMode())},
             erlPath : erlPath,
-            elixirPath : elixirPath
-        }
-        window.ui = require("./../../erlhickey/ui")
-        ui.init(function(){
-            require("./../../erlhickey/dirtree").init();
-            require("./../../erlhickey/terminal").init();
-
-            exports.init();
-
-            var context = require("./../../erlhickey/textual_context");
-            var tooltip = require("./../../erlhickey/tooltip");
-            //TODO var dirTreeBroswer = require("./../../erlhickey/dirtree_browser")
-
-            tooltip.init("#definition-tip");
-
-            context.init(env.editor, ":");
-            context.on("contextSwitch", function(context){
-                tooltip.handleContext(context, project)
-            })
-            env.editor.on("change", function(){
-                ui.showUnsaved()
+            elixirPath : elixirPath,
+            tree : null
+        };
+        utils.load("projectTree?path='"+ path +"'", function(res){
+            project.tree = JSON.parse(res.response)["result"];
+            project.allFiles = project.tree.map(function(a){
+                var cake = a.split("/");
+                return cake[cake.length-1] + " (" + a + ")"
             })
 
-            $("#w2ui-popup #loadNameInput").change(function(){
-                utils.load("findFile?&name=" + $("#w2ui-popup #loadNameInput").val(), function(res){
-                    var files = JSON.stringify(res.response)[result]
+            window.ui = require("./../../erlhickey/ui");
+            ui.init(function(){
+                require("./../../erlhickey/dirtree").init();
+                require("./../../erlhickey/terminal").init();
 
+                exports.init();
+
+                var context = require("./../../erlhickey/textual_context");
+                var tooltip = require("./../../erlhickey/tooltip");
+                //TODO var dirTreeBroswer = require("./../../erlhickey/dirtree_browser")
+
+                tooltip.init("#definition-tip");
+
+                context.init(env.editor, ":");
+                context.on("contextSwitch", function(context){
+                    tooltip.handleContext(context, project)
                 })
-            })
-        });
+                env.editor.on("change", function(){
+                    ui.showUnsaved()
+                })
 
+                $("#w2ui-popup #loadNameInput").change(function(){
+                    utils.load("findFile?&name=" + $("#w2ui-popup #loadNameInput").val(), function(res){
+                        var files = JSON.stringify(res.response)[result]
 
-
-
+                    })
+                })
+            });
+        })
     }
 
 

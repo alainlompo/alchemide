@@ -1,7 +1,8 @@
 define(function(require, exports, module){
-    var listeners = []
+    var listeners = [];
     var _editor;
     var _delimiter;
+    var contextChanges = [];
     exports.init = function(editor, moduleDelimiter)
     {
         _editor = editor;
@@ -18,7 +19,6 @@ define(function(require, exports, module){
     var lastState;
     exports.emit = function(event){
         var args = Array.prototype.slice.call(arguments, 1);
-        if(lastState == JSON.stringify(args)) return;
         if(event != "contextSwitch") throw new Error("Wrong event name "+event);
         listeners.map(function(f){f.apply(null, args)});
         lastState = JSON.stringify(args);
@@ -29,9 +29,12 @@ define(function(require, exports, module){
             var p = editor.getCursorPosition();
 
 
+
             //get line
             var line = editor.session.getLine(p.row);
-            exports.emit("contextSwitch", exports.getContext(line, p.column, p.row, _delimiter))
+            var context = exports.getContext(line, p.column, p.row, _delimiter)
+            if(lastState != JSON.stringify(args))
+                exports.emit("contextSwitch", context)
         })
     }
     exports.getContext = function(line, column, row, calleeDelimiter){
@@ -63,5 +66,9 @@ define(function(require, exports, module){
             column: start_row,
             row : row
         }
+    }
+    exports.contextChanged = function(row, column, file){
+        contextChanges.push({row:row, column:column, file:file});
+        if(contextChanges.length > 100) contextChanges = contextChanges.slice(1);
     }
 });

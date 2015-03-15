@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-
-
+require("coffee-script/register");
 var http = require("http")
   , path = require("path")
   , mime = require("mime")
@@ -9,6 +8,8 @@ var http = require("http")
     EventEmitter =  require("events").EventEmitter
   , port = process.env.PORT || 8888
   , ip = "localhost";
+
+global.projectRoot = path.resolve(__dirname);
 
 
 // compatibility with node 0.6

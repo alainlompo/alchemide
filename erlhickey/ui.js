@@ -78,6 +78,12 @@ define(function(require, exports, module) {
         w2ui["editorLayout"].on("render", myFun);
 
         exports.addTab = function (name, filepath, session) {
+            var sameTabs = w2ui.layout_main_tabs.tabs.filter( function(tab){return tab.id == "tab-" + name})
+            console.log(sameTabs    )
+            if(sameTabs[0]){
+                exports.selectTab(sameTabs[0].id);
+            }
+
             exports.addSession(filepath, session);
             w2ui.layout_main_tabs.add({
                 "id": "tab-" + name,
@@ -95,7 +101,7 @@ define(function(require, exports, module) {
                 },
                 "caption": name
             })
-            w2ui.layout_main_tabs.select("tab-" + name)
+            exports.selectTab(name)
 
         };
         $("#menuBt").click(function () {
@@ -141,6 +147,9 @@ define(function(require, exports, module) {
                 activeTab.caption = activeTab.caption.substring(0,activeTab.caption.length-2);
                 w2ui.layout_main_tabs.refresh();
             }
+        }
+        exports.selectTab = function(name){
+            w2ui.layout_main_tabs.select("tab-" + name)
         }
     }
 });

@@ -32,19 +32,15 @@ http.on("/findFile", function(req, res, params){
     var projectPath = params["path"].replace(/'/g, "");
     dir.files(projectPath, function(err, files){
         if(!err){
-
             res.end(JSON.stringify({result: files.filter(function(f){
                 return fileRegExp.test(f)
             })}));
         }
     })
 });
-
-function File(text, icon, children){
-
-    return {
-        text        : text, // node text
-        icon        : icon, // string for custom
-        children    : children  // array of strings or objects
-    }
-}
+http.on("/projectTree", function(req,res, params){
+    var projectPath = params["path"].replace(/'/g, "");
+    dir.files(projectPath, function(err, files){
+        res.end(JSON.stringify({err: err, result : files}))
+    })
+})
