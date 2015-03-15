@@ -1,16 +1,13 @@
 # Alchemide - Erlang / Elixir dedicated IDE
 
-[About Alchemide](#about) About Alchemide
-[FAQ](#faq) About Alchemide
+- [About Alchemide](#about)  
+- [Startingout](#startingout)  
+- [FAQ](#faq)  
+- [License](#license)
 
 ## About 
 Alchemide is   
-Alchemide is   
-Alchemide is   
-Alchemide is   
-Alchemide is   
-Alchemide is   
-Alchemide is   
-Alchemide is   
+
+## Starting Out
 
 ## FAQ
