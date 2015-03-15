@@ -13,16 +13,16 @@ Alchemide (former ErlHickey) is an open source dedicated Erlang / Elixir editor.
 It's developed on the top of ACE Editor with Node.js as a backend.  
 Latest version ( 0.2.4 ) of Alchemide supports:  
 
-    - Syntax highlighting
-    - Autocompletion of Stdlib libraries ( Both Erlang and Elixir )
-    - Project directory browsing
-    - Built-in terminal with erl and iex tab-completion
-    - Quick-open file from the project
-    - Floating window displaying function definition
-    - Macros
-    - Multiple selection editting
-    - Finding and replacing in file
-    - Very easy to extend because of simple logic written in JavaScript 
+- Syntax highlighting
+- Autocompletion of Stdlib libraries ( Both Erlang and Elixir )
+- Project directory browsing
+- Built-in terminal with erl and iex tab-completion
+- Quick-open file from the project
+- Floating window displaying function definition
+- Macros
+- Multiple selection editting
+- Finding and replacing in file
+- Very easy to extend because of simple logic written in JavaScript 
 
 ## Installation
 [Download link](https://drive.google.com/open?id=0B7w-FN9jiHQoZEM1QzNtcGhGLTg&authuser=0)
