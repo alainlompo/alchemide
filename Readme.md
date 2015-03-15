@@ -1,7 +1,7 @@
 # Alchemide - Erlang / Elixir dedicated IDE
 
-[About Alchemide](#About) About Alchemide
-[FAQ](#FAQ) About Alchemide
+[About Alchemide](#about) About Alchemide
+[FAQ](#faq) About Alchemide
 
 ## About 
 Alchemide is   
