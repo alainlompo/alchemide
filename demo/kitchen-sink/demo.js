@@ -426,7 +426,6 @@ border:1px solid #baf; z-index:100";
     window.setPath = function(name){
         $('#w2ui-popup #projectInput').val(name)
         startProject(name);
-
     }
     window.startProject = function(path) {
         var erlPath = $('#w2ui-popup #erlPath').val();
