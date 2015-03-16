@@ -6,8 +6,7 @@ define(function(require, exports, module) {
     var utils = require("./utils");
     exports.compile = function(editor, isElixir) {
         editor.session.setAnnotations([]);
-        console.log("compiling: " + (isElixir ? "elixir" : "erl") + "/compile?module=" + window.project.path + editor.session.name)
-        utils.load((isElixir ? "elixir" : "erl") + "/compile?module=" + window.project.path + editor.session.name, function(result){
+        utils.load((isElixir ? "elixir" : "erl") + "/compile?module='" + editor.session.name +"'", function(result){
             console.log(result.response)
             var res = JSON.parse(result.response);
             res.map (function(line){
@@ -25,6 +24,7 @@ define(function(require, exports, module) {
         }
     };
     function addAnnot(editor, atRow, text, type){
+
         editor.session.setAnnotations(
             editor.session.getAnnotations().concat(
             [{

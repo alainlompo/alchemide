@@ -30,13 +30,13 @@ server.on("/elixir/complete", function(req, res){
 
 server.on("/erl/compile", function(req, res){
     var parameters = url.parse(req.url, true).query;
-    erlCompServer.compile(parameters["module"], function(result){
+    erlCompServer.compile(parameters["module"].replace(/'/g,""), function(result){
         res.end(JSON.stringify(result, null, 2))
     })
 });
 server.on("/elixir/compile", function(req, res){
     var parameters = url.parse(req.url, true).query;
-    eliCompServer.compile(parameters["module"], function(result){
+    eliCompServer.compile(parameters["module"].replace(/'/g,""), function(result){
         res.end(JSON.stringify(result, null, 2))
     })
 });
@@ -144,7 +144,7 @@ function compileModule(name, cb, term, isElixir){
         term.once("data", function (data) {
             var lastRes = false;
             data.split("\n").map(function (line) {
-                var res = recognizeCompilerLine(line);
+                var res = isElixir ? recognizeElixirLine(line) : recognizeCompilerLine(line);
                 if (res) {
                     lines.push(res);
                     if (res.type == "result") {
@@ -181,6 +181,42 @@ function recognizeCompilerLine(line){
             content: cake.slice(2).join(":")
         }
     }
+}
+function recognizeElixirLine(line){
+    if(/\*\* \(/.test(line)){
+        var cake;
+        var result = line.match(/\*\* \(SyntaxError\).*/)
+        if(result){
+            cake = result[0].replace(/\*\* \(SyntaxError\)/, "").split(":");
+            return {
+                type: "error",
+                path: cake[0],
+                line: cake[1],
+                content: cake.slice(2).join(":")
+            }
+        }
+        result = line.match(/\*\* \(exit\).*/)
+
+        if(result){
+            return {
+                type: "result"
+            }
+        }
+    } else if(line.match(/.*:.*:.*/)){
+        cake = line.split(":");
+        return {
+            type: "warning",
+            path: cake[0],
+            line: cake[1],
+            content: cake.slice(2).join(":")
+        }
+
+    } else if(line.match(/iex\(/)){
+        return {
+            type: "result"
+        }
+    } else return undefined
+
 }
 function dialyzeModule(name, cb) {
     var dialTerm = pty.spawn('dialyzer', [name, "--quiet"], {

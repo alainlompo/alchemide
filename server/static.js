@@ -44,6 +44,7 @@ function receiveClient(req, res) {
     }
 
     if (req.method == "PUT") {
+        console.log("Putin")
         save(req, res, filename);
     }
 
@@ -112,7 +113,9 @@ function save(req, res, filePath) {
             fs.writeFileSync(filePath, data);
         }
         catch (e) {
-            return error(res, 404, "Could't save file", e);
+            res.statusCode = 404;
+            res.end("Could't save file");
+            return;
         }
         res.statusCode = 200;
         res.end("OK");

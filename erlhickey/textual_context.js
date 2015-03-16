@@ -33,7 +33,7 @@ define(function(require, exports, module){
             //get line
             var line = editor.session.getLine(p.row);
             var context = exports.getContext(line, p.column, p.row, _delimiter)
-            if(lastState != JSON.stringify(args))
+            if(lastState != JSON.stringify(context))
                 exports.emit("contextSwitch", context)
         })
     }

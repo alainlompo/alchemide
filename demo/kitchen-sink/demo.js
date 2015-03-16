@@ -275,7 +275,7 @@ border:1px solid #baf; z-index:100";
                 if(!session.name){
                     //TODO save as new
                 }
-                $.ajax(project.address + project.path + session.name,{
+                $.ajax(project.address + session.name.replace("/",""),{
                     method: "PUT",
                     data: session.getDocument().getValue()
                 }).done(function(){
@@ -419,7 +419,7 @@ border:1px solid #baf; z-index:100";
     $('#w2ui-popup #erlPath').val   (window.localStorage.getItem("erlPath")     || "");
     $('#w2ui-popup #elixirPath').val(window.localStorage.getItem("elixirPath")  || "");
     $('#w2ui-popup #lastProjects').html(
-        lastProjects.split(",").map(function(path){
+        lastProjects.split(",").filter(function(a){return !!a}).map(function(path){
             return "<li onclick='setPath(this.innerText)'><a href='#'>" + path + "</a></li>"
         }).join("")
     );
