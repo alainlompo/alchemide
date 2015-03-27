@@ -1,5 +1,17 @@
 # Alchemide - Erlang / Elixir dedicated IDE
 
+## Deprecation note
+Alchemide is no longer supported as a standalone editor. In favor of not re-inventing the wheel we moved whole functionality to [atom.io](atom.io) in a form of independent plugins.  
+Soon we'll be creating a github page dedicated to Erlang / Elixir tools for atom editor.  
+For now take a look at:
+- Erlang Autocompleter          - https://atom.io/packages/autocomplete-erlang
+- Erlang linter                 - https://atom.io/packages/linter-erlc
+- Erlang langugae highlighting  - https://atom.io/packages/language-erlang
+- Elixir Autocompleter          - https://atom.io/packages/autocomplete-elixir
+- Elixir linter                 - https://atom.io/packages/linter-elixirc
+- Elixir langugae highlighting  - https://atom.io/packages/language-elixir
+
+
 - [About Alchemide](#about)  
 - [Installation](#installation)  
   - [Linux](#linux)
