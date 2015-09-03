@@ -7,10 +7,7 @@ For now take a look at:
 
 - Erlang Autocompleter          - https://atom.io/packages/autocomplete-erlang
 - Erlang linter                 - https://atom.io/packages/linter-erlc
-- Erlang langugae highlighting  - https://atom.io/packages/language-erlang
-- Elixir Autocompleter          - https://atom.io/packages/autocomplete-elixir
-- Elixir linter                 - https://atom.io/packages/linter-elixirc
-- Elixir language highlighting  - https://atom.io/packages/language-elixir
+- Erlang language highlighting  - https://atom.io/packages/language-erlang
 
 ## Alchemide IDE
 - [About Alchemide](#about)  
